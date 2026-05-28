@@ -377,6 +377,47 @@ final class URLSessionAPIClientTests: XCTestCase {
     }
 }
 
+// MARK: - Cancellation 에러
+
+extension URLSessionAPIClientTests {
+
+    func test_request_URLError_cancelled이면_cancelled_에러를_던진다() async throws {
+        let client = try XCTUnwrap(sut)
+        URLProtocolStub.register { _ in .failure(URLError(.cancelled)) }
+
+        let endpoint = Endpoint(baseURL: baseURL, path: "/test")
+        do {
+            let _: SampleItem = try await client.request(endpoint)
+            XCTFail("에러를 던져야 합니다")
+        } catch let error as NetworkError {
+            XCTAssertEqual(error, .cancelled)
+        } catch {
+            XCTFail("NetworkError가 아닌 에러가 발생했습니다: \(error)")
+        }
+    }
+
+    func test_request_Task_취소시_cancelled_에러를_던진다() async throws {
+        let client = try XCTUnwrap(sut)
+        // URLProtocolStub이 URLError(.cancelled)를 던지도록 설정
+        URLProtocolStub.register { _ in .failure(URLError(.cancelled)) }
+
+        let endpoint = Endpoint(baseURL: baseURL, path: "/test")
+        let task = Task<Void, Error> {
+            let _: SampleItem = try await client.request(endpoint)
+        }
+        task.cancel()
+
+        do {
+            try await task.value
+            XCTFail("에러를 던져야 합니다")
+        } catch let error as NetworkError {
+            XCTAssertEqual(error, .cancelled)
+        } catch {
+            XCTFail("NetworkError가 아닌 에러가 발생했습니다: \(error)")
+        }
+    }
+}
+
 // MARK: - Test Fixtures
 
 private struct SampleItem: Codable, Sendable {

@@ -33,9 +33,8 @@ public struct Endpoint: Sendable {
     /// scheme 또는 host가 없으면 nil을 반환한다.
     public var url: URL? {
         var components = URLComponents(url: baseURL.appending(path: path), resolvingAgainstBaseURL: true)
-        let hasValidScheme = components?.scheme.map { !$0.isEmpty } ?? false
-        let hasValidHost = components?.host.map { !$0.isEmpty } ?? false
-        guard hasValidScheme, hasValidHost else {
+        guard let scheme = components?.scheme, !scheme.isEmpty,
+              let host = components?.host, !host.isEmpty else {
             return nil
         }
         if let queryItems, !queryItems.isEmpty {

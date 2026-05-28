@@ -56,6 +56,10 @@ public final class URLSessionAPIClient: APIClientProtocol {
             }
         } catch let error as NetworkError {
             throw error
+        } catch is CancellationError {
+            throw NetworkError.cancelled
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            throw NetworkError.cancelled
         } catch {
             throw NetworkError.transport
         }
