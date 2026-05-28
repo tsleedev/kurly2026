@@ -13,13 +13,15 @@ GitHub Search API를 활용한 저장소 검색 iOS 앱.
 
 - **iOS 17.0+**
 - **SwiftUI** + `@Observable` + `NavigationStack`
-- **async / await + AsyncSequence**
+- **async / await + Task** (debounce는 `Clock` 주입)
 - **Modular + Clean Architecture** (Vertical Slicing, microfeatures 5-target)
 - **SwiftPM** (Tuist 미사용)
 - **프로덕션 외부 라이브러리 0** (순수 Swift)
-- 테스트: `swift-snapshot-testing`
+- 테스트: **XCTest** (Domain / Data / ViewModel) + **swift-snapshot-testing** (SwiftUI View)
 - Lint: `SwiftLint`
-- CI: GitHub Actions (test, lint, Gemini PR review)
+- CI: GitHub Actions (test, lint, Gemini PR 자동 리뷰)
+
+> GitHub Search API는 무인증 시 10req/min, 60req/h 제한. 데모 중 rate limit이 잡히면 잠시 후 재시도.
 
 ## 문서
 
@@ -47,7 +49,7 @@ cd Modules && swift test
 xcodebuild test \
   -project App/KurlyGitHubSearchApp.xcodeproj \
   -scheme KurlyGitHubSearchApp \
-  -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.5'
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest'
 
 # (예정) Lint
 swiftlint --strict
