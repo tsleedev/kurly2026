@@ -37,9 +37,13 @@ public struct CachedAsyncImage<Content: View, Placeholder: View>: View {
                 placeholder()
             }
         }
-        .task(id: url) {
+        .task(id: url) { [loader, url] in
             image = nil    // 새 URL 로드 시작 시 placeholder가 보이도록 초기화
-            image = try? await loader.image(for: url)
+            image = try? await withTaskCancellationHandler {
+                try await loader.image(for: url)
+            } onCancel: {
+                Task { await loader.cancel(for: url) }
+            }
         }
     }
 }

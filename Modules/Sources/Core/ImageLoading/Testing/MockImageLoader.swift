@@ -18,7 +18,13 @@ public final class MockImageLoader: ImageLoaderProtocol, @unchecked Sendable {
     private let lock = NSLock()
     private var modeByURL: [URL: Mode] = [:]
     private var defaultMode: Mode
-    private(set) public var callCounts: [URL: Int] = [:]
+    private var _callCounts: [URL: Int] = [:]
+
+    public var callCounts: [URL: Int] {
+        lock.lock()
+        defer { lock.unlock() }
+        return _callCounts
+    }
 
     // MARK: - Init
 
@@ -36,7 +42,7 @@ public final class MockImageLoader: ImageLoaderProtocol, @unchecked Sendable {
 
     public func image(for url: URL) async throws -> UIImage {
         lock.lock()
-        callCounts[url, default: 0] += 1
+        _callCounts[url, default: 0] += 1
         let mode = modeByURL[url] ?? defaultMode
         lock.unlock()
         switch mode {
