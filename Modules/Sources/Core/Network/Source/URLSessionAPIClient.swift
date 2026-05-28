@@ -8,12 +8,18 @@ public final class URLSessionAPIClient: APIClientProtocol {
 
     private let session: URLSession
     private let decoder: JSONDecoder
+    private let now: @Sendable () -> Date
 
     // MARK: - Init
 
-    public init(session: URLSession = .shared, decoder: JSONDecoder = .init()) {
+    public init(
+        session: URLSession = .shared,
+        decoder: JSONDecoder = .init(),
+        now: @escaping @Sendable () -> Date = { Date() }
+    ) {
         self.session = session
         self.decoder = decoder
+        self.now = now
     }
 
     // MARK: - Public
@@ -28,7 +34,7 @@ public final class URLSessionAPIClient: APIClientProtocol {
         endpoint.headers?.forEach { urlRequest.setValue($1, forHTTPHeaderField: $0) }
 
         do {
-            let (data, response) = try await fetchData(for: urlRequest)
+            let (data, response) = try await session.data(for: urlRequest)
 
             guard let http = response as? HTTPURLResponse else {
                 throw NetworkError.transport
@@ -57,39 +63,20 @@ public final class URLSessionAPIClient: APIClientProtocol {
 
     // MARK: - Private
 
-    /// macOS 10.15 이상에서 동작하도록 withCheckedThrowingContinuation으로 래핑
-    private func fetchData(for request: URLRequest) async throws -> (Data, URLResponse) {
-        try await withCheckedThrowingContinuation { continuation in
-            let task = session.dataTask(with: request) { data, response, error in
-                if let error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-                guard let data, let response else {
-                    continuation.resume(throwing: URLError(.badServerResponse))
-                    return
-                }
-                continuation.resume(returning: (data, response))
-            }
-            task.resume()
-        }
-    }
-
+    /// 429는 항상 rate limit. 403은 X-RateLimit-Remaining == "0"일 때만 rate limit.
     private func isRateLimited(_ response: HTTPURLResponse) -> Bool {
-        let remaining = response.allHeaderFields["X-RateLimit-Remaining"] as? String
-        let isRateLimitExhausted = remaining == "0"
-        let isRateLimitStatusCode = response.statusCode == 403 || response.statusCode == 429
-        return isRateLimitExhausted && isRateLimitStatusCode
+        if response.statusCode == 429 { return true }
+        if response.statusCode == 403 {
+            return response.value(forHTTPHeaderField: "X-RateLimit-Remaining") == "0"
+        }
+        return false
     }
 
+    /// X-RateLimit-Reset Unix timestamp를 현재 시각과 비교해 대기 시간을 반환한다.
     private func parseRetryAfter(from response: HTTPURLResponse) -> TimeInterval? {
-        guard let value = response.allHeaderFields["X-RateLimit-Reset"] as? String else {
-            return nil
-        }
-        guard let resetTimestamp = TimeInterval(value) else {
-            return nil
-        }
-        let retryAfter = resetTimestamp - Date().timeIntervalSince1970
+        guard let value = response.value(forHTTPHeaderField: "X-RateLimit-Reset"),
+              let resetTimestamp = TimeInterval(value) else { return nil }
+        let retryAfter = resetTimestamp - now().timeIntervalSince1970
         return retryAfter > 0 ? retryAfter : nil
     }
 }

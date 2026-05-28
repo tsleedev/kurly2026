@@ -212,6 +212,91 @@ final class URLSessionAPIClientTests: XCTestCase {
         }
     }
 
+    func test_request_429응답이면_헤더없어도_rateLimited_에러를_던진다() async throws {
+        // 429는 X-RateLimit-Remaining 헤더와 무관하게 항상 rate limit
+        URLProtocolStub.reset()
+        let session = URLSession(configuration: .stubbed)
+        let client = URLSessionAPIClient(session: session)
+        let response = try makeHTTPResponse(statusCode: 429)
+        URLProtocolStub.register { _ in .success((Data(), response)) }
+
+        let endpoint = Endpoint(baseURL: baseURL, path: "/test")
+        do {
+            let _: SampleItem = try await client.request(endpoint)
+            XCTFail("에러를 던져야 합니다")
+        } catch let error as NetworkError {
+            if case .rateLimited = error {
+                // 성공
+            } else {
+                XCTFail("rateLimited가 아닌 에러: \(error)")
+            }
+        } catch {
+            XCTFail("NetworkError가 아닌 에러가 발생했습니다: \(error)")
+        }
+    }
+
+    // MARK: - Rate Limit retryAfter (now() 주입 deterministic 검증)
+
+    func test_request_rateLimited_retryAfter_고정시간주입으로_deterministic하게_검증된다() async throws {
+        // now = Unix 0 (1970-01-01), Reset = 3600 → retryAfter = 3600초
+        let fixedNow = Date(timeIntervalSince1970: 0)
+        URLProtocolStub.reset()
+        let session = URLSession(configuration: .stubbed)
+        let client = URLSessionAPIClient(session: session, now: { fixedNow })
+        let response = try makeHTTPResponse(
+            statusCode: 403,
+            headers: [
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": "3600",
+            ]
+        )
+        URLProtocolStub.register { _ in .success((Data(), response)) }
+
+        let endpoint = Endpoint(baseURL: baseURL, path: "/test")
+        do {
+            let _: SampleItem = try await client.request(endpoint)
+            XCTFail("에러를 던져야 합니다")
+        } catch let error as NetworkError {
+            if case .rateLimited(let retryAfter) = error {
+                let unwrapped = try XCTUnwrap(retryAfter)
+                XCTAssertEqual(unwrapped, 3600, accuracy: 0.001)
+            } else {
+                XCTFail("rateLimited가 아닌 에러: \(error)")
+            }
+        } catch {
+            XCTFail("NetworkError가 아닌 에러가 발생했습니다: \(error)")
+        }
+    }
+
+    func test_request_rateLimited_retryAfter_reset이_과거면_nil을_반환한다() async throws {
+        // now = 7200, Reset = 3600 → retryAfter <= 0 → nil
+        let fixedNow = Date(timeIntervalSince1970: 7200)
+        URLProtocolStub.reset()
+        let session = URLSession(configuration: .stubbed)
+        let client = URLSessionAPIClient(session: session, now: { fixedNow })
+        let response = try makeHTTPResponse(
+            statusCode: 429,
+            headers: [
+                "X-RateLimit-Reset": "3600",
+            ]
+        )
+        URLProtocolStub.register { _ in .success((Data(), response)) }
+
+        let endpoint = Endpoint(baseURL: baseURL, path: "/test")
+        do {
+            let _: SampleItem = try await client.request(endpoint)
+            XCTFail("에러를 던져야 합니다")
+        } catch let error as NetworkError {
+            if case .rateLimited(let retryAfter) = error {
+                XCTAssertNil(retryAfter, "reset이 과거이면 retryAfter는 nil이어야 합니다")
+            } else {
+                XCTFail("rateLimited가 아닌 에러: \(error)")
+            }
+        } catch {
+            XCTFail("NetworkError가 아닌 에러가 발생했습니다: \(error)")
+        }
+    }
+
     // MARK: - Decoding 실패
 
     func test_request_잘못된_JSON이면_decoding_에러를_던진다() async throws {

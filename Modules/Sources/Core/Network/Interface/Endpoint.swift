@@ -32,7 +32,7 @@ public struct Endpoint: Sendable {
     /// URLComponents를 사용하여 최종 URL을 조립한다.
     /// scheme 또는 host가 없으면 nil을 반환한다.
     public var url: URL? {
-        var components = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: true)
+        var components = URLComponents(url: baseURL.appending(path: path), resolvingAgainstBaseURL: true)
         let hasValidScheme = components?.scheme.map { !$0.isEmpty } ?? false
         let hasValidHost = components?.host.map { !$0.isEmpty } ?? false
         guard hasValidScheme, hasValidHost else {
