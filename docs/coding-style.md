@@ -30,8 +30,7 @@
 
 ## 금지 / 회피
 
-- `force_cast` (`as!`), `force_try` (`try!`), `force_unwrapping` (`x!`) — SwiftLint error
-- `implicitly_unwrapped_optional` (`var x: T!`) — warning
+- `force_cast` (`as!`), `force_try` (`try!`), `force_unwrapping` (`x!`), `implicitly_unwrapped_optional` (`var x: T!`) — 모두 SwiftLint error (unsafe unwrap 일관 금지)
 - `print` (대신 OSLog 또는 throw)
 - `DispatchQueue.main.async` (대신 `@MainActor` / `await MainActor.run`)
 - Singleton (`shared`) — 생성자 주입으로 대체

@@ -18,8 +18,9 @@ analyzer_rules:
 force_cast: error
 force_try: error
 force_unwrapping: error
+# IUO도 unsafe unwrap의 일종 — force_unwrapping과 동일하게 error로 통일 (Gemini PR #3 반영)
 implicitly_unwrapped_optional:
-  severity: warning
+  severity: error
 
 # trailing comma는 diff 친화적이라 의도적으로 사용. 일관 강제.
 trailing_comma:
