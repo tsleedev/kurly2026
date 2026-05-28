@@ -1,0 +1,29 @@
+import Foundation
+import SearchInterface
+
+/// `AutoCompleteUseCase` 구현체. prefix 매칭(대소문자 무시) + 최신순 + maxCount 제한.
+public final class AutoCompleteUseCaseImpl: AutoCompleteUseCase {
+
+    // MARK: - Init
+
+    private let repository: RecentKeywordRepositoryProtocol
+    private let maxCount: Int
+
+    public init(repository: RecentKeywordRepositoryProtocol, maxCount: Int = 10) {
+        self.repository = repository
+        self.maxCount = maxCount
+    }
+
+    // MARK: - Public
+
+    public func suggestions(for prefix: String) -> [RecentKeyword] {
+        let trimmed = prefix.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return [] }
+        let lowered = trimmed.lowercased()
+        return repository.all()
+            .filter { $0.keyword.lowercased().hasPrefix(lowered) }
+            .sorted { $0.searchedAt > $1.searchedAt }
+            .prefix(maxCount)
+            .map { $0 }
+    }
+}
