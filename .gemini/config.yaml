@@ -1,0 +1,26 @@
+have_fun: false
+
+code_review:
+  disable: false
+  # LOW priority 코멘트는 노이즈가 많아 차단. MEDIUM 이상만 표시.
+  comment_severity_threshold: MEDIUM
+  # 코멘트 수 제한 없음 (큰 PR도 모두 확인)
+  max_review_comments: -1
+
+  pull_request_opened:
+    help: false        # PR 열 때 사용법 안내 코멘트 안 띄움
+    summary: true      # 변경 요약 코멘트
+    code_review: true  # 자동 코드 리뷰
+
+ignore_patterns:
+  # SwiftPM 자동 생성 lockfile (의존성 추가/업그레이드 시만 변경, 사람이 리뷰할 의미 적음)
+  - "Modules/Package.resolved"
+  # Xcode 자동 생성 메타데이터 (CreatedOnToolsVersion / LastUpgradeCheck 같은 false positive 방지)
+  - "**/*.xcodeproj/project.xcworkspace/**"
+  - "**/*.xcodeproj/xcuserdata/**"
+  - "**/xcshareddata/**"
+  # Asset 카탈로그 JSON (Xcode가 관리, 의미 있는 리뷰 어려움)
+  - "**/Assets.xcassets/**"
+  # 빌드/캐시 산출물 (.gitignore에 있지만 안전망)
+  - ".build/**"
+  - "DerivedData/**"
