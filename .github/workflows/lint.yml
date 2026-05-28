@@ -17,8 +17,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install SwiftLint
-        run: brew install swiftlint
+      # brew는 latest를 가져오는데 0.63.2가 force_unwrapping false positive를 내는
+      # 이슈가 있어 (placeholder 파일까지 violation으로 잡음) release tarball에서
+      # 직접 받아 0.63.3으로 고정한다. PR #5/#6 검증 중 발견.
+      - name: Install SwiftLint 0.63.3 (pinned)
+        run: |
+          set -euo pipefail
+          SL_VERSION=0.63.3
+          curl -sSL -o swiftlint.zip "https://github.com/realm/SwiftLint/releases/download/${SL_VERSION}/portable_swiftlint.zip"
+          mkdir -p swiftlint-bin && unzip -q swiftlint.zip -d swiftlint-bin
+          sudo install swiftlint-bin/swiftlint /usr/local/bin/swiftlint
+          rm -rf swiftlint.zip swiftlint-bin
 
       - name: SwiftLint version
         run: swiftlint --version
