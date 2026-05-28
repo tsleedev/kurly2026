@@ -3,9 +3,9 @@ import SearchInterface
 
 /// `RecentKeywordUseCase` 테스트 대역.
 ///
-/// NSLock으로 captured* 프로퍼티를 보호한다.
-/// @unchecked Sendable: lock 보호로 thread-safety를 직접 보장하므로 컴파일러 검사를 우회.
-public final class MockRecentKeywordUseCase: RecentKeywordUseCase, @unchecked Sendable {
+/// actor로 선언하여 stubRecent / captured* 프로퍼티를 actor isolation으로 보호한다.
+/// NSLock + @unchecked Sendable 패턴을 제거하고 컴파일러 수준의 thread-safety를 얻는다.
+public actor MockRecentKeywordUseCase: RecentKeywordUseCase {
 
     // MARK: - Stub
 
@@ -19,8 +19,6 @@ public final class MockRecentKeywordUseCase: RecentKeywordUseCase, @unchecked Se
 
     // MARK: - Init
 
-    private let lock = NSLock()
-
     public init(stubRecent: [RecentKeyword] = []) {
         self.stubRecent = stubRecent
     }
@@ -28,18 +26,24 @@ public final class MockRecentKeywordUseCase: RecentKeywordUseCase, @unchecked Se
     // MARK: - RecentKeywordUseCase
 
     public func recent() -> [RecentKeyword] {
-        lock.withLock { stubRecent }
+        stubRecent
     }
 
     public func save(_ keyword: String) {
-        lock.withLock { capturedSaves.append(keyword) }
+        capturedSaves.append(keyword)
     }
 
     public func delete(_ keyword: String) {
-        lock.withLock { capturedDeletes.append(keyword) }
+        capturedDeletes.append(keyword)
     }
 
     public func deleteAll() {
-        lock.withLock { deleteAllCallCount += 1 }
+        deleteAllCallCount += 1
+    }
+
+    // MARK: - Test Helpers
+
+    public func setStubRecent(_ keywords: [RecentKeyword]) {
+        stubRecent = keywords
     }
 }
