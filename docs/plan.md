@@ -27,7 +27,7 @@
 | 아키텍처 | **Modular + Clean Architecture (Vertical Slicing)** | Feature 단위 모듈 분리 |
 | 모듈 구조 패턴 | **microfeatures 5-target** | Interface / Source / Testing / Tests / Example |
 | 프로젝트 도구 | **SwiftPM only** | Tuist 미사용 (과제 규모 대비 오버킬) |
-| 비동기 | **async / await + AsyncSequence** | iOS 17+ 안정 |
+| 비동기 | **async / await + Task** | iOS 17+ 안정. debounce는 `Clock` 주입 + `clock.sleep(for:)` |
 | ViewModel | **`@Observable` 매크로** | SwiftUI 1급 시민. View가 자동 추적 |
 | 화면 전환 | **Router 패턴 + NavigationStack** | `@Observable AppRouter` + path 바인딩 |
 | WebView | **`UIViewRepresentable`로 `WKWebView` wrap** | SwiftUI 메인 + 필요한 곳만 UIKit bridge |
@@ -92,6 +92,8 @@ KurlyGitHubSearch/                       ← Git Repo Root
 │       │   │   │   ├── Owner.swift
 │       │   │   │   ├── SearchResult.swift
 │       │   │   │   └── RecentKeyword.swift
+│       │   │   ├── Destinations/
+│       │   │   │   └── SearchResultDestination.swift   (struct: query — AppRouter가 사용)
 │       │   │   └── Repositories/
 │       │   │       ├── GitHubRepositoryProtocol.swift
 │       │   │       └── RecentKeywordRepositoryProtocol.swift
@@ -129,12 +131,13 @@ KurlyGitHubSearch/                       ← Git Repo Root
 │       │   └── Example/                 ← target: SearchExample (선택적)
 │       │       └── SearchExampleApp.swift   (SwiftUI Preview용 단독 데모)
 │       │
-│       ├── WebView/                     ← Feature 모듈
+│       ├── WebView/                     ← Feature 모듈 (microfeatures)
 │       │   ├── Interface/               ← target: WebViewInterface
-│       │   │   └── WebViewDestination.swift
+│       │   │   └── WebViewDestination.swift   (struct: url, title — AppRouter가 사용)
 │       │   ├── Source/                  ← target: WebView
-│       │   │   ├── RepositoryWebView.swift          (SwiftUI View)
+│       │   │   ├── RepositoryWebView.swift          (SwiftUI View, init(destination:))
 │       │   │   └── WKWebViewRepresentable.swift     (UIViewRepresentable)
+│       │   ├── Testing/                 ← target: WebViewTesting (필요 시)
 │       │   └── Tests/                   ← target: WebViewTests
 │       │
 │       └── Core/                        ← 공용 인프라
@@ -289,6 +292,26 @@ public protocol RecentKeywordUseCase {
 public protocol AutoCompleteUseCase {
     func suggestions(for prefix: String) -> [RecentKeyword]
 }
+
+// Destinations — AppRouter가 navigationDestination 분기에 사용.
+// Feature의 화면 파라미터를 한 곳에 모아 Router 시그니처를 안정화한다.
+public struct SearchResultDestination: Hashable {
+    public let query: String
+    public init(query: String) { self.query = query }
+}
+```
+
+### WebViewInterface (Pure Swift, Foundation only)
+
+```swift
+public struct WebViewDestination: Hashable {
+    public let url: URL
+    public let title: String
+    public init(url: URL, title: String) {
+        self.url = url
+        self.title = title
+    }
+}
 ```
 
 ### ViewModel 패턴 (`@Observable` + SwiftUI)
@@ -313,18 +336,21 @@ final class SearchViewModel {
     
     private let recentKeywordUseCase: RecentKeywordUseCase
     private let autoCompleteUseCase: AutoCompleteUseCase
+    private let clock: any Clock<Duration>          // 테스트 시 TestClock 주입
     @ObservationIgnored private var debounceTask: Task<Void, Never>?
     
     init(recentKeywordUseCase: RecentKeywordUseCase,
-         autoCompleteUseCase: AutoCompleteUseCase) { ... }
+         autoCompleteUseCase: AutoCompleteUseCase,
+         clock: any Clock<Duration> = ContinuousClock()) { ... }
     
     func onAppear() { state = .recent(recentKeywordUseCase.recent()) }
     
     func onQueryChanged(_ newValue: String) {
         debounceTask?.cancel()
         debounceTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .milliseconds(300))
-            guard let self, !Task.isCancelled else { return }
+            guard let self else { return }
+            try? await self.clock.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
             self.state = newValue.isEmpty
                 ? .recent(self.recentKeywordUseCase.recent())
                 : .autocomplete(self.autoCompleteUseCase.suggestions(for: newValue))
@@ -359,19 +385,25 @@ final class SearchViewModel {
 
 ```swift
 // App/AppRouter.swift
+//
+// Destination은 각 Feature의 Interface에서 정의한 struct를 그대로 들고 다닌다.
+// 이렇게 하면 화면별 파라미터가 늘어나도 AppRouter 시그니처가 바뀌지 않고,
+// "WebViewDestination" 같은 타입이 실제로 의미를 가진다.
 @Observable
 @MainActor
 final class AppRouter {
     enum Destination: Hashable {
-        case searchResult(query: String)
-        case webView(url: URL, title: String)
+        case searchResult(SearchResultDestination)
+        case webView(WebViewDestination)
     }
     
     var path: [Destination] = []
     
-    func showSearchResult(query: String) { path.append(.searchResult(query: query)) }
-    func showWebView(url: URL, title: String) {
-        path.append(.webView(url: url, title: title))
+    func showSearchResult(_ destination: SearchResultDestination) {
+        path.append(.searchResult(destination))
+    }
+    func showWebView(_ destination: WebViewDestination) {
+        path.append(.webView(destination))
     }
     func pop() { _ = path.popLast() }
     func popToRoot() { path.removeAll() }
@@ -392,14 +424,14 @@ struct AppRootView: View {
             SearchView(viewModel: container.makeSearchViewModel(router: router))
                 .navigationDestination(for: AppRouter.Destination.self) { dest in
                     switch dest {
-                    case .searchResult(let query):
+                    case .searchResult(let destination):
                         SearchResultView(
                             viewModel: container.makeSearchResultViewModel(
-                                query: query, router: router
+                                destination: destination, router: router
                             )
                         )
-                    case .webView(let url, let title):
-                        RepositoryWebView(url: url, title: title)
+                    case .webView(let destination):
+                        RepositoryWebView(destination: destination)
                     }
                 }
         }
@@ -413,7 +445,9 @@ extension AppDIContainer {
             recentKeywordUseCase: ...,
             autoCompleteUseCase: ...
         )
-        vm.onRequestSearch = { [weak router] q in router?.showSearchResult(query: q) }
+        vm.onRequestSearch = { [weak router] query in
+            router?.showSearchResult(.init(query: query))
+        }
         return vm
     }
 }
@@ -525,7 +559,8 @@ public struct CachedAsyncImage<Content: View, Placeholder: View>: View {
 - `.navigationTitle("Search")` (large title)
 - `.searchable(text:, prompt: "저장소 검색")` modifier
 - **상태 A (입력 없음)**: "최근 검색" 섹션 + chip 형태 + "전체삭제" 버튼
-- **상태 B (입력 중)**: 자동완성 리스트 (prefix 매칭 최근 검색어 + 검색 날짜)
+- **상태 B (입력 중)**: 자동완성 리스트 (prefix 매칭 **최근 검색어** + 검색 날짜)
+  - 자동완성 소스는 로컬 최근 검색어만 사용. GitHub Search API에는 별도 suggest 엔드포인트가 없고, 매 키 입력마다 검색 API 호출은 rate limit(무인증 60req/h, 검색 API는 별도 10req/min) 부담
 - `.onSubmit(of: .search)` → Router로 검색 결과 화면 push
 - 최근 검색어 X 탭 → `.alert` (삭제 확인)
 - 전체삭제 → `.alert` (전체 삭제 확인)
@@ -533,7 +568,7 @@ public struct CachedAsyncImage<Content: View, Placeholder: View>: View {
 ### 2) SearchResultView (검색 결과 화면)
 **레퍼런스**: `과제/예시 2..png`
 
-- `.searchable`에 query 표시 (or `.navigationTitle`에 표시)
+- `.navigationTitle(query)`로 표시 (결과 화면에서 `.searchable`은 사용하지 않음 — 재검색은 백 후 검색 화면에서)
 - "266,714개 저장소" 형태 총 개수 헤더
 - `List` + `RepositoryRow`
   - 좌측: `CachedAsyncImage` 썸네일 (40~48pt clip to circle)
@@ -656,7 +691,8 @@ Response 매핑:
 - `MapperTests`: DTO → Entity 변환
 
 ### Presentation 테스트 (SearchTests/Presentation/)
-- `SearchViewModelTests`: Mock UseCase 주입, debounce 동작, 상태 전환
+- `SearchViewModelTests`: Mock UseCase 주입, 상태 전환
+- **debounce 테스트**: `TestClock`(직접 구현, 외부 라이브러리 0 정책) 주입 → 가상 시간 advance로 결정론적 테스트
 - `SearchResultViewModelTests`: 무한 스크롤 진입 조건, 페이지 누적, 종결
 - Router 연결: `vm.onRequestSearch = { received.append($0) }` 검증
 
@@ -683,7 +719,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: maxim-lobanov/setup-xcode@v1
-        with: { xcode-version: '15.4' }
+        with: { xcode-version: latest-stable }
       - name: SwiftPM Test
         run: cd Modules && swift test
       - name: Xcode Test (Snapshot 포함)
@@ -691,7 +727,7 @@ jobs:
           xcodebuild test \
             -project App/KurlyGitHubSearchApp.xcodeproj \
             -scheme KurlyGitHubSearchApp \
-            -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.5'
+            -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest'
 ```
 
 ### `.github/workflows/lint.yml`
@@ -709,37 +745,12 @@ jobs:
         run: swiftlint --strict
 ```
 
-### `.github/workflows/gemini-review.yml`
-```yaml
-name: Gemini PR Review
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-permissions:
-  contents: read
-  pull-requests: write
-jobs:
-  review:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - name: Gemini Code Review
-        uses: rubensflinco/gemini-code-review-action@latest
-        with:
-          gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          model: 'gemini-2.0-flash-exp'
-          extra-prompt: |
-            iOS Swift 코드 리뷰. SwiftUI + Modular + Clean Architecture 관점에서
-            모듈 의존성 위반, async/await 누락, force unwrap, 메모리 누수,
-            테스트 누락을 중점적으로 봐줘.
-```
-> action 가용성에 따라 자체 스크립트(diff → Gemini API → PR comment)로 대체 가능
+> **Gemini PR 자동 리뷰**: GitHub Actions로 동작 (워크플로 파일은 별도 관리되어 본 plan에서는 명세 생략. PR 생성 시 자동으로 리뷰 코멘트가 달림).
 
 ### `.swiftlint.yml`
 - 기본 규칙 + 모듈러 코드에 맞는 customization
-- `force_cast`, `force_try` 강제 fail
+- `force_cast`, `force_try`, `force_unwrapping` 강제 fail
+- `implicitly_unwrapped_optional` warning
 - 파일 길이 제한, 함수 길이 제한 등
 
 ---
@@ -764,7 +775,7 @@ jobs:
 [GitHub Actions 자동 실행]
    - test.yml (swift test + xcodebuild test)
    - lint.yml (SwiftLint --strict)
-   - gemini-review.yml (Gemini PR diff 리뷰 코멘트)
+   - Gemini PR 자동 리뷰 (워크플로 별도 관리)
      ▼
 [리뷰 코멘트 반영]
      ▼
@@ -778,7 +789,7 @@ jobs:
 | # | 브랜치 | 내용 | 의존 |
 |---|---|---|---|
 | 1 | `infra/skeleton` | Xcode 프로젝트, Package.swift 골격, .gitignore, README 뼈대, CLAUDE.md + docs/, SwiftLint 룰 | - |
-| 2 | `infra/ci` | GitHub Actions: test.yml, lint.yml, gemini-review.yml | 1 |
+| 2 | `infra/ci` | GitHub Actions: test.yml, lint.yml (Gemini 리뷰 워크플로는 별도 관리됨) | 1 |
 | 3 | `feat/core-network` | NetworkInterface + URLSessionAPIClient + URLProtocolStub + Tests | 1 |
 | 4 | `feat/core-storage` | StorageInterface + UserDefaultsStorage + InMemoryStorage + Tests | 1 |
 | 5 | `feat/core-image-loading` | ImageLoader (actor + NSCache) + CachedAsyncImage + Tests | 1 |
@@ -791,40 +802,13 @@ jobs:
 | 12 | `feat/webview` | WKWebViewRepresentable + RepositoryWebView + Tests | 1 |
 | 13 | `feat/app-router-di` | AppDIContainer + AppRouter + AppRootView + NavigationStack 조립 (모든 화면 연결) | 8, 10, 12 |
 | 14 | `chore/snapshot-tests` | SearchView / SearchResultView Snapshot 테스트 (record → commit) | 13 |
-| 15 | `chore/readme-final` | README 최종본 (아키텍처 다이어그램, 의사결정 근거, AI 활용 내역, CI 배지) | 14 |
+| 15 | `chore/readme-final` | README 최종 정리: 아키텍처 다이어그램, CI 배지, AI 활용 내역, 스크린샷. (각 PR이 자기 변경분은 README에 점진 반영하되, 이 PR에서 전체 톤/구조를 마무리) | 14 |
 
 > 의존성이 있는 PR은 의존 PR이 머지된 후 작업 시작. 병렬 가능한 PR(3, 4, 5)은 동시 진행 가능.
 
-### Gemini PR 자동 리뷰 (`.github/workflows/gemini-review.yml`)
+### Gemini PR 자동 리뷰
 
-```yaml
-name: Gemini PR Review
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-permissions:
-  contents: read
-  pull-requests: write
-jobs:
-  review:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - name: Gemini Code Review
-        # 예시: 커뮤니티 action 사용 또는 자체 스크립트로 Gemini API 호출
-        uses: rubensflinco/gemini-code-review-action@latest
-        with:
-          gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          model: 'gemini-2.0-flash-exp'
-          extra-prompt: |
-            iOS Swift 코드 리뷰. SwiftUI + Modular + Clean Architecture 관점에서
-            모듈 의존성 위반, async/await 누락, force unwrap, 메모리 누수,
-            테스트 누락을 중점적으로 봐줘.
-```
-
-> Action은 시점에 따라 가용성이 다르므로 `infra/ci` 작업 시 최신 검증된 것 선택. 안 되면 자체 워크플로(diff → Gemini API → PR comment)로 대체.
+GitHub Actions로 동작. 워크플로 파일은 별도 관리되어 본 plan에 명세하지 않음. PR 생성/업데이트 시 자동으로 코멘트가 달림.
 
 ### PR 전 Claude Code 사전 리뷰 체크리스트
 
@@ -867,7 +851,7 @@ open App/KurlyGitHubSearchApp.xcodeproj
 xcodebuild test \
   -project App/KurlyGitHubSearchApp.xcodeproj \
   -scheme KurlyGitHubSearchApp \
-  -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.5'
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest'
 
 # Lint
 swiftlint --strict
@@ -964,8 +948,7 @@ SwiftUI + Modular Clean Architecture + microfeatures.
 
 ## 별도 액션 아이템
 
-1. **GitHub 레포 생성 후 Secrets 설정**:
-   - `GEMINI_API_KEY`: Google AI Studio에서 발급 → Repo Settings → Secrets and variables → Actions에 추가
-2. **main 브랜치 보호 설정** (선택):
-   - Settings → Branches → main → Require pull request, require status checks (test, lint, gemini-review)
-3. **GitHub Public 설정 확인** (제출 시점)
+1. **main 브랜치 보호 설정** (선택):
+   - Settings → Branches → main → Require pull request, require status checks (test, lint)
+2. **GitHub Public 설정 확인** (제출 시점)
+3. **Gemini PR 자동 리뷰**: 별도 관리되는 워크플로가 정상 동작하는지 첫 PR에서 확인 (코멘트가 달리는지)

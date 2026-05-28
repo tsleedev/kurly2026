@@ -22,8 +22,7 @@ xcuserdata/
 .build/
 .swiftpm/
 Packages/
-Package.pins
-Package.resolved
+# Package.resolved / Package.pins 는 의도적으로 커밋 (빌드 재현성)
 *.xcodeproj/project.xcworkspace/xcuserdata/
 
 # CocoaPods (혹시 사용 시)
