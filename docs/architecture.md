@@ -57,15 +57,15 @@ WebView  ──► WebViewInterface
 
 | 폴더 / 모듈 | 허용 import |
 |---|---|
-| `*Interface/` (도메인) | Foundation only |
-| `*Interface/` (인프라) | Foundation + 해당 OS 플랫폼 타입 (UIKit/SwiftUI) — [Interface 분류](#interface-분류) 참조 |
+| `*Interface/` (도메인/플랫폼 독립) | Foundation only |
+| `*Interface/` (OS-bound 인프라) | Foundation + 해당 OS 플랫폼 타입 (UIKit/SwiftUI) — [Interface 분류](#interface-분류) 참조 |
 | `*/Domain/` (UseCase, Entity) | Foundation only |
 | `*/Data/` (Repository, DTO) | Foundation + own Interface + 외부 Interface |
 | `*/Presentation/` (View, ViewModel) | SwiftUI + own Interface + Domain |
 | `App/` | 모든 모듈 (Composition Root) |
 
 위반 사례:
-- ❌ 도메인 Interface에서 SwiftUI/UIKit import
+- ❌ 도메인/플랫폼 독립 Interface에서 SwiftUI/UIKit import
 - ❌ `Search`(Source)에서 `WebView` import (Router로만 연결)
 - ❌ `Interface` → `Source` import (방향 역전)
 
@@ -73,10 +73,11 @@ WebView  ──► WebViewInterface
 
 `*Interface/` 모듈은 두 가지로 나뉜다:
 
-- **도메인 Interface** — Repository, UseCase, Entity 등 비즈니스 로직 추상화
-  - 예: `SearchInterface`, `WebViewInterface`, `NetworkInterface`, `StorageInterface`
-  - **Foundation only**. 외부/플랫폼 의존성 금지
-- **인프라 Interface** — 본질적으로 OS API 추상화인 경우
+- **도메인 및 플랫폼 독립 Interface** (Foundation only)
+  - 비즈니스 도메인: `SearchInterface`, `WebViewInterface`
+  - 공용 인프라(플랫폼 독립): `NetworkInterface`, `StorageInterface`
+  - UIKit/SwiftUI/외부 라이브러리 import 금지
+- **OS-bound 인프라 Interface** — 본질적으로 OS API 추상화인 경우
   - 예: `ImageLoadingInterface` (UIImage 노출)
   - 해당 플랫폼 타입(UIKit/SwiftUI) 노출 **허용**
   - 이유: `Data` 같은 generic 타입으로 우회하면 (1) 캐시 효율 저하(매 호출 디코딩), (2) 테스트 mock 복잡, (3) 실무 표준(Kingfisher, SDWebImage 등) 패턴과 어긋남
