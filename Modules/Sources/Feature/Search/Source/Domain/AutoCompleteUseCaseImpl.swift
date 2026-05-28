@@ -20,10 +20,11 @@ public final class AutoCompleteUseCaseImpl: AutoCompleteUseCase {
         let trimmed = prefix.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return [] }
         let lowered = trimmed.lowercased()
-        return repository.all()
-            .filter { $0.keyword.lowercased().hasPrefix(lowered) }
-            .sorted { $0.searchedAt > $1.searchedAt }
-            .prefix(maxCount)
-            .map { $0 }
+        return Array(
+            repository.all()
+                .filter { $0.keyword.lowercased().hasPrefix(lowered) }
+                .sorted { $0.searchedAt > $1.searchedAt }
+                .prefix(maxCount)
+        )
     }
 }

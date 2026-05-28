@@ -27,10 +27,11 @@ public final class MockSearchRepositoriesUseCase: SearchRepositoriesUseCase, @un
     // MARK: - SearchRepositoriesUseCase
 
     public func execute(query: String, page: Int) async throws -> SearchResult {
-        lock.withLock {
+        let snapshot = lock.withLock { () -> Result<SearchResult, Error> in
             capturedExecutions.append((query: query, page: page))
+            return stubResult
         }
-        switch stubResult {
+        switch snapshot {
         case .success(let result):
             return result
         case .failure(let error):

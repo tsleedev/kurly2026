@@ -27,10 +27,11 @@ public final class MockGitHubRepository: GitHubRepositoryProtocol, @unchecked Se
     // MARK: - GitHubRepositoryProtocol
 
     public func search(query: String, page: Int) async throws -> SearchResult {
-        lock.withLock {
+        let snapshot = lock.withLock { () -> Result<SearchResult, Error> in
             capturedQueries.append((query: query, page: page))
+            return stubResult
         }
-        switch stubResult {
+        switch snapshot {
         case .success(let result):
             return result
         case .failure(let error):
