@@ -2,7 +2,11 @@ import Foundation
 import NetworkInterface
 
 /// URLSession 기반 APIClientProtocol 구현체
-public final class URLSessionAPIClient: APIClientProtocol {
+///
+/// `JSONDecoder`는 `Sendable`을 준수하지 않지만 init 이후 mutating 없이 `decode`만
+/// 호출되며, `URLSession`은 thread-safe하다. 모든 stored property가 `let`이고
+/// `now`도 `@Sendable` 클로저이므로 `@unchecked Sendable`로 동시성 경고를 닫아도 안전하다.
+public final class URLSessionAPIClient: APIClientProtocol, @unchecked Sendable {
 
     // MARK: - Private
 
