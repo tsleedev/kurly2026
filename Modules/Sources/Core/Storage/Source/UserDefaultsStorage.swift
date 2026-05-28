@@ -2,8 +2,11 @@ import Foundation
 import StorageInterface
 
 /// UserDefaults 기반 KeyValueStorage 구현.
-/// UserDefaults는 내부적으로 thread-safe하므로 @unchecked Sendable 선언이 안전하다.
-public final class UserDefaultsStorage: KeyValueStorageProtocol, @unchecked Sendable {
+///
+/// actor로 선언하여 protocol의 async 메서드와 일치시킨다.
+/// UserDefaults 자체가 thread-safe하지만 protocol이 actor isolated이므로
+/// actor 채택으로 @unchecked Sendable 없이 컴파일러 보장을 받는다.
+public actor UserDefaultsStorage: KeyValueStorageProtocol {
 
     // MARK: - Init
 
