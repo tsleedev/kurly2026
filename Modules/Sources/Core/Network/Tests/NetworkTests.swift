@@ -1,3 +1,1 @@
-import XCTest
-
-final class NetworkTests: XCTestCase {}
+// NetworkTests module — see EndpointTests.swift, URLSessionAPIClientTests.swift

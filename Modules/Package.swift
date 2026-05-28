@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "Modules",
-    platforms: [.iOS(.v17)],
+    platforms: [.iOS(.v17), .macOS(.v10_15)],
     products: [
         // Public products = App이 쓸 수 있는 것만 노출.
         // *Testing 타겟은 product로 노출하지 않음 — 같은 패키지 내 testTarget이
