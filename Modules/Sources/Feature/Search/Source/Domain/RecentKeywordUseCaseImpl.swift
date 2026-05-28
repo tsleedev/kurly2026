@@ -3,8 +3,8 @@ import SearchInterface
 
 /// `RecentKeywordUseCase` 구현체.
 ///
-/// 동시 호출이 적은 영역(검색 화면 유저 액션)이지만 thread-safe하게 동작하도록
-/// underlying repository와 clock에만 의존하고 자체 상태는 보유하지 않는다.
+/// 자체 mutable state 없이 repository에 위임만 하므로 final class로 충분하다.
+/// protocol이 async 통일되어 있어 repository 호출에 await를 사용한다.
 public final class RecentKeywordUseCaseImpl: RecentKeywordUseCase {
 
     // MARK: - Init
@@ -22,21 +22,21 @@ public final class RecentKeywordUseCaseImpl: RecentKeywordUseCase {
 
     // MARK: - Public
 
-    public func recent() -> [RecentKeyword] {
-        repository.all().sorted { $0.searchedAt > $1.searchedAt }
+    public func recent() async -> [RecentKeyword] {
+        await repository.all().sorted { $0.searchedAt > $1.searchedAt }
     }
 
-    public func save(_ keyword: String) {
+    public func save(_ keyword: String) async {
         let trimmed = keyword.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        repository.append(trimmed, at: clock())
+        await repository.append(trimmed, at: clock())
     }
 
-    public func delete(_ keyword: String) {
-        repository.remove(keyword)
+    public func delete(_ keyword: String) async {
+        await repository.remove(keyword)
     }
 
-    public func deleteAll() {
-        repository.removeAll()
+    public func deleteAll() async {
+        await repository.removeAll()
     }
 }
