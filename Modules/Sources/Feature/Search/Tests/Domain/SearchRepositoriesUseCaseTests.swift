@@ -42,9 +42,10 @@ final class SearchRepositoriesUseCaseTests: XCTestCase {
 
         _ = try await sut.execute(query: "kurly", page: 3)
 
-        XCTAssertEqual(mockRepo.capturedQueries.count, 1)
-        XCTAssertEqual(mockRepo.capturedQueries[0].query, "kurly")
-        XCTAssertEqual(mockRepo.capturedQueries[0].page, 3)
+        let captured = await mockRepo.capturedQueries
+        XCTAssertEqual(captured.count, 1)
+        XCTAssertEqual(captured[0].query, "kurly")
+        XCTAssertEqual(captured[0].page, 3)
     }
 
     func test_execute_page1과_page2가_각각_올바르게_전달된다() async throws {
@@ -54,9 +55,10 @@ final class SearchRepositoriesUseCaseTests: XCTestCase {
         _ = try await sut.execute(query: "swift", page: 1)
         _ = try await sut.execute(query: "swift", page: 2)
 
-        XCTAssertEqual(mockRepo.capturedQueries.count, 2)
-        XCTAssertEqual(mockRepo.capturedQueries[0].page, 1)
-        XCTAssertEqual(mockRepo.capturedQueries[1].page, 2)
+        let captured = await mockRepo.capturedQueries
+        XCTAssertEqual(captured.count, 2)
+        XCTAssertEqual(captured[0].page, 1)
+        XCTAssertEqual(captured[1].page, 2)
     }
 }
 

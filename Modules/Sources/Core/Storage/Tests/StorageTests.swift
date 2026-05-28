@@ -26,39 +26,43 @@ final class UserDefaultsStorageTests: XCTestCase {
         super.tearDown()
     }
 
-    func test_setData_그리고_data_동일값_반환() {
+    func test_setData_그리고_data_동일값_반환() async {
         guard let sut else { return XCTFail("sut not initialized") }
         let key = "testKey"
         let value = Data("hello".utf8)
 
-        sut.setData(value, forKey: key)
+        await sut.setData(value, forKey: key)
 
-        XCTAssertEqual(sut.data(forKey: key), value)
+        let got = await sut.data(forKey: key)
+        XCTAssertEqual(got, value)
     }
 
-    func test_removeObject_이후_nil_반환() {
+    func test_removeObject_이후_nil_반환() async {
         guard let sut else { return XCTFail("sut not initialized") }
         let key = "testKey"
-        sut.setData(Data("hello".utf8), forKey: key)
+        await sut.setData(Data("hello".utf8), forKey: key)
 
-        sut.removeObject(forKey: key)
+        await sut.removeObject(forKey: key)
 
-        XCTAssertNil(sut.data(forKey: key))
+        let got = await sut.data(forKey: key)
+        XCTAssertNil(got)
     }
 
-    func test_setData_nil_전달시_삭제됨() {
+    func test_setData_nil_전달시_삭제됨() async {
         guard let sut else { return XCTFail("sut not initialized") }
         let key = "testKey"
-        sut.setData(Data("hello".utf8), forKey: key)
+        await sut.setData(Data("hello".utf8), forKey: key)
 
-        sut.setData(nil, forKey: key)
+        await sut.setData(nil, forKey: key)
 
-        XCTAssertNil(sut.data(forKey: key))
+        let got = await sut.data(forKey: key)
+        XCTAssertNil(got)
     }
 
-    func test_존재하지_않는_키_조회시_nil_반환() {
+    func test_존재하지_않는_키_조회시_nil_반환() async {
         guard let sut else { return XCTFail("sut not initialized") }
-        XCTAssertNil(sut.data(forKey: "nonExistentKey"))
+        let got = await sut.data(forKey: "nonExistentKey")
+        XCTAssertNil(got)
     }
 }
 
@@ -78,42 +82,46 @@ final class InMemoryStorageTests: XCTestCase {
         super.tearDown()
     }
 
-    func test_setData_그리고_data_동일값_반환() {
+    func test_setData_그리고_data_동일값_반환() async {
         guard let sut else { return XCTFail("sut not initialized") }
         let key = "testKey"
         let value = Data("hello".utf8)
 
-        sut.setData(value, forKey: key)
+        await sut.setData(value, forKey: key)
 
-        XCTAssertEqual(sut.data(forKey: key), value)
+        let got = await sut.data(forKey: key)
+        XCTAssertEqual(got, value)
     }
 
-    func test_removeObject_이후_nil_반환() {
+    func test_removeObject_이후_nil_반환() async {
         guard let sut else { return XCTFail("sut not initialized") }
         let key = "testKey"
-        sut.setData(Data("hello".utf8), forKey: key)
+        await sut.setData(Data("hello".utf8), forKey: key)
 
-        sut.removeObject(forKey: key)
+        await sut.removeObject(forKey: key)
 
-        XCTAssertNil(sut.data(forKey: key))
+        let got = await sut.data(forKey: key)
+        XCTAssertNil(got)
     }
 
-    func test_setData_nil_전달시_삭제됨() {
+    func test_setData_nil_전달시_삭제됨() async {
         guard let sut else { return XCTFail("sut not initialized") }
         let key = "testKey"
-        sut.setData(Data("hello".utf8), forKey: key)
+        await sut.setData(Data("hello".utf8), forKey: key)
 
-        sut.setData(nil, forKey: key)
+        await sut.setData(nil, forKey: key)
 
-        XCTAssertNil(sut.data(forKey: key))
+        let got = await sut.data(forKey: key)
+        XCTAssertNil(got)
     }
 
-    func test_존재하지_않는_키_조회시_nil_반환() {
+    func test_존재하지_않는_키_조회시_nil_반환() async {
         guard let sut else { return XCTFail("sut not initialized") }
-        XCTAssertNil(sut.data(forKey: "nonExistentKey"))
+        let got = await sut.data(forKey: "nonExistentKey")
+        XCTAssertNil(got)
     }
 
-    func test_동시_setData_데이터레이스_없음() async {
+    func test_동시_setData_무결성() async {
         guard let sut else { return XCTFail("sut not initialized") }
         let key = "concurrentKey"
         let iterations = 100
@@ -121,12 +129,13 @@ final class InMemoryStorageTests: XCTestCase {
         await withTaskGroup(of: Void.self) { group in
             for index in 0..<iterations {
                 group.addTask {
-                    sut.setData(Data("\(index)".utf8), forKey: key)
+                    await sut.setData(Data("\(index)".utf8), forKey: key)
                 }
             }
         }
 
-        // 모든 작업 완료 후 크래시 없이 값을 읽을 수 있어야 함
-        _ = sut.data(forKey: key)
+        // 모든 작업 완료 후 크래시 없이 값을 읽을 수 있어야 함 (actor isolation으로 보장)
+        let got = await sut.data(forKey: key)
+        XCTAssertNotNil(got)
     }
 }

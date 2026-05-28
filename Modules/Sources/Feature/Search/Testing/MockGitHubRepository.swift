@@ -3,9 +3,9 @@ import SearchInterface
 
 /// `GitHubRepositoryProtocol` 테스트 대역.
 ///
-/// NSLock으로 captured* 프로퍼티를 보호한다.
-/// @unchecked Sendable: lock 보호로 thread-safety를 직접 보장하므로 컴파일러 검사를 우회.
-public final class MockGitHubRepository: GitHubRepositoryProtocol, @unchecked Sendable {
+/// actor로 선언하여 stubResult / capturedQueries를 actor isolation으로 보호한다.
+/// NSLock + @unchecked Sendable 패턴을 제거하고 컴파일러 수준의 thread-safety를 얻는다.
+public actor MockGitHubRepository: GitHubRepositoryProtocol {
 
     // MARK: - Stub
 
@@ -18,8 +18,6 @@ public final class MockGitHubRepository: GitHubRepositoryProtocol, @unchecked Se
 
     // MARK: - Init
 
-    private let lock = NSLock()
-
     public init(stub: Result<SearchResult, Error>) {
         self.stubResult = stub
     }
@@ -27,15 +25,18 @@ public final class MockGitHubRepository: GitHubRepositoryProtocol, @unchecked Se
     // MARK: - GitHubRepositoryProtocol
 
     public func search(query: String, page: Int) async throws -> SearchResult {
-        let snapshot = lock.withLock { () -> Result<SearchResult, Error> in
-            capturedQueries.append((query: query, page: page))
-            return stubResult
-        }
-        switch snapshot {
+        capturedQueries.append((query: query, page: page))
+        switch stubResult {
         case .success(let result):
             return result
         case .failure(let error):
             throw error
         }
+    }
+
+    // MARK: - Test Helpers
+
+    public func setStub(_ stub: Result<SearchResult, Error>) {
+        stubResult = stub
     }
 }

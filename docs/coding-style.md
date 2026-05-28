@@ -36,6 +36,27 @@
 - Singleton (`shared`) — 생성자 주입으로 대체
 - 전역 mutable state
 
+## 동기화
+
+### 권장 순위
+
+1. **`actor`** — 기본. 외부 IO/Storage/Repository 구현체에 사용. 컴파일러가 isolation을 보장하므로 lock 코드 불필요.
+2. **`OSAllocatedUnfairLock`** — 부득이하게 sync API + thread-safety가 필요할 때 (예: 어떤 외부 protocol이 sync로 고정된 자리). `NSLock`보다 성능 우위.
+3. **`NSLock`** — 호환성·가독성이 더 중요하거나 단순한 보호가 필요할 때.
+
+### 금지 패턴
+
+`@unchecked Sendable + class + 비명시적 락` — 락 보호 범위가 명확하지 않으면 리뷰 시 data race 여부를 정적으로 알 수 없다.
+
+부득이하게 사용해야 할 경우 반드시:
+- (a) `actor`가 안 되는 명확한 이유를 주석으로 명시
+- (b) 락으로 보호되는 모든 프로퍼티와 범위를 주석으로 명시
+
+### Protocol 추상화 일관성
+
+외부 IO 추상화는 sync 인터페이스 금지. 모든 외부 IO/Storage/Repository protocol은 async로 정의한다.  
+자세한 근거는 [architecture.md - Interface 추상화 규칙](architecture.md) 참조.
+
 ## 주석
 
 - 코드가 무엇을 하는지 설명하지 않는다. 식별자 이름으로 표현

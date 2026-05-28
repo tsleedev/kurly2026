@@ -2,8 +2,12 @@ import Foundation
 import StorageInterface
 
 /// UserDefaults 기반 KeyValueStorage 구현.
-/// UserDefaults는 내부적으로 thread-safe하므로 @unchecked Sendable 선언이 안전하다.
-public final class UserDefaultsStorage: KeyValueStorageProtocol, @unchecked Sendable {
+///
+/// `actor` 채택으로 protocol의 async 요구사항을 만족하지만,
+/// 내부 mutable state가 없고 `UserDefaults` 자체가 thread-safe하므로
+/// 모든 메서드를 `nonisolated`로 선언하여 actor hop을 회피한다.
+/// (`InMemoryStorage`처럼 자체 상태를 가진 actor는 isolated가 정상.)
+public actor UserDefaultsStorage: KeyValueStorageProtocol {
 
     // MARK: - Init
 
@@ -15,11 +19,11 @@ public final class UserDefaultsStorage: KeyValueStorageProtocol, @unchecked Send
 
     // MARK: - Public
 
-    public func data(forKey key: String) -> Data? {
+    public nonisolated func data(forKey key: String) -> Data? {
         defaults.data(forKey: key)
     }
 
-    public func setData(_ data: Data?, forKey key: String) {
+    public nonisolated func setData(_ data: Data?, forKey key: String) {
         if let data {
             defaults.set(data, forKey: key)
         } else {
@@ -27,7 +31,7 @@ public final class UserDefaultsStorage: KeyValueStorageProtocol, @unchecked Send
         }
     }
 
-    public func removeObject(forKey key: String) {
+    public nonisolated func removeObject(forKey key: String) {
         defaults.removeObject(forKey: key)
     }
 }

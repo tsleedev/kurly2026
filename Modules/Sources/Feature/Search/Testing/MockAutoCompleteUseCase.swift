@@ -3,9 +3,9 @@ import SearchInterface
 
 /// `AutoCompleteUseCase` 테스트 대역.
 ///
-/// NSLock으로 captured* 프로퍼티를 보호한다.
-/// @unchecked Sendable: lock 보호로 thread-safety를 직접 보장하므로 컴파일러 검사를 우회.
-public final class MockAutoCompleteUseCase: AutoCompleteUseCase, @unchecked Sendable {
+/// actor로 선언하여 stubSuggestions / capturedPrefixes를 actor isolation으로 보호한다.
+/// NSLock + @unchecked Sendable 패턴을 제거하고 컴파일러 수준의 thread-safety를 얻는다.
+public actor MockAutoCompleteUseCase: AutoCompleteUseCase {
 
     // MARK: - Stub
 
@@ -17,8 +17,6 @@ public final class MockAutoCompleteUseCase: AutoCompleteUseCase, @unchecked Send
 
     // MARK: - Init
 
-    private let lock = NSLock()
-
     public init(stubSuggestions: [RecentKeyword] = []) {
         self.stubSuggestions = stubSuggestions
     }
@@ -26,9 +24,13 @@ public final class MockAutoCompleteUseCase: AutoCompleteUseCase, @unchecked Send
     // MARK: - AutoCompleteUseCase
 
     public func suggestions(for prefix: String) -> [RecentKeyword] {
-        lock.withLock {
-            capturedPrefixes.append(prefix)
-            return stubSuggestions
-        }
+        capturedPrefixes.append(prefix)
+        return stubSuggestions
+    }
+
+    // MARK: - Test Helpers
+
+    public func setStubSuggestions(_ suggestions: [RecentKeyword]) {
+        stubSuggestions = suggestions
     }
 }
