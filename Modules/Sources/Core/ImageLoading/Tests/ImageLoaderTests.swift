@@ -16,12 +16,19 @@ private final class StubURLProtocol: URLProtocol {
 
     private static let lock = NSLock()
     private static var stubs: [URL: Response] = [:]
+    private static var errorStubs: [URL: Error] = [:]
     private static var requestCounts: [URL: Int] = [:]
 
     static func stub(_ response: Response, for url: URL) {
         lock.lock()
         defer { lock.unlock() }
         stubs[url] = response
+    }
+
+    static func stubError(_ error: Error, for url: URL) {
+        lock.lock()
+        defer { lock.unlock() }
+        errorStubs[url] = error
     }
 
     static func requestCount(for url: URL) -> Int {
@@ -34,6 +41,7 @@ private final class StubURLProtocol: URLProtocol {
         lock.lock()
         defer { lock.unlock() }
         stubs = [:]
+        errorStubs = [:]
         requestCounts = [:]
     }
 
@@ -49,7 +57,13 @@ private final class StubURLProtocol: URLProtocol {
         StubURLProtocol.lock.lock()
         StubURLProtocol.requestCounts[url, default: 0] += 1
         let stub = StubURLProtocol.stubs[url]
+        let errorStub = StubURLProtocol.errorStubs[url]
         StubURLProtocol.lock.unlock()
+
+        if let errorStub {
+            client?.urlProtocol(self, didFailWithError: errorStub)
+            return
+        }
 
         guard let stub else {
             client?.urlProtocol(self, didFailWithError: URLError(.resourceUnavailable))
@@ -197,6 +211,25 @@ final class ImageLoaderTests: XCTestCase {
             XCTFail("에러가 발생해야 함")
         } catch let error as ImageLoadingError {
             XCTAssertEqual(error, .decodingFailed)
+        } catch {
+            XCTFail("예상치 못한 에러: \(error)")
+        }
+    }
+
+    // MARK: - Error: cancelled (URLError)
+
+    /// URLSession.data(from:) 취소는 URLError(.cancelled)를 던짐.
+    /// CancellationError와 별개로 ImageLoadingError.cancelled로 매핑되는지 검증.
+    func test_image_URLError_cancelled이면_cancelled_에러() async throws {
+        let url = try makeURL()
+        StubURLProtocol.stubError(URLError(.cancelled), for: url)
+        let sut = makeSUT()
+
+        do {
+            _ = try await sut.image(for: url)
+            XCTFail("에러가 발생해야 함")
+        } catch let error as ImageLoadingError {
+            XCTAssertEqual(error, .cancelled)
         } catch {
             XCTFail("예상치 못한 에러: \(error)")
         }

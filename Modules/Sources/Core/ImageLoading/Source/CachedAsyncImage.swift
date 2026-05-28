@@ -38,6 +38,7 @@ public struct CachedAsyncImage<Content: View, Placeholder: View>: View {
             }
         }
         .task(id: url) {
+            image = nil    // 새 URL 로드 시작 시 placeholder가 보이도록 초기화
             image = try? await loader.image(for: url)
         }
     }

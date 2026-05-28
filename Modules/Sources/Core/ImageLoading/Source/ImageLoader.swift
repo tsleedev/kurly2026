@@ -43,8 +43,11 @@ public actor ImageLoader: ImageLoaderProtocol {
         defer { inFlight[url] = nil }
         do {
             return try await task.value
-        } catch is CancellationError {
-            throw ImageLoadingError.cancelled
+        } catch {
+            if error is CancellationError || (error as? URLError)?.code == .cancelled {
+                throw ImageLoadingError.cancelled
+            }
+            throw error
         }
     }
 
