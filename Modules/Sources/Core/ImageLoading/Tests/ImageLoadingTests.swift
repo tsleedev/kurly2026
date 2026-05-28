@@ -1,3 +1,1 @@
-import XCTest
-
-final class ImageLoadingTests: XCTestCase {}
+// ImageLoadingTests — see ImageLoaderTests.swift

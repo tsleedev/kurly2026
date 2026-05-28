@@ -1,1 +1,1 @@
-import Foundation
+// ImageLoadingTesting — see MockImageLoader.swift
