@@ -13,21 +13,41 @@ public final class URLProtocolStub: URLProtocol {
     // MARK: - Static State
 
     private static let lock = NSLock()
-    private static var handler: ((URLRequest) -> Result<(Data, HTTPURLResponse), Error>)?
+    private static var defaultHandler: ((URLRequest) -> Result<(Data, HTTPURLResponse), Error>)?
+    private static var perURLHandlers: [URL: (URLRequest) -> Result<(Data, HTTPURLResponse), Error>] = [:]
 
     // MARK: - Public API
 
-    /// 스텁 핸들러를 등록한다.
+    /// 모든 URL에 대해 동작하는 기본 스텁 핸들러를 등록한다.
+    ///
+    /// 단일 테스트 클래스에서 setUp/tearDown으로 `reset()`을 보장한다면 안전하다.
+    /// 병렬 테스트나 동일 클래스 안에서 URL별 다른 응답이 필요할 때는
+    /// `register(for:handler:)`로 격리한다.
     public static func register(handler: @escaping (URLRequest) -> Result<(Data, HTTPURLResponse), Error>) {
         lock.withLock {
-            Self.handler = handler
+            defaultHandler = handler
         }
     }
 
-    /// 등록된 핸들러를 제거한다.
+    /// 특정 URL에 대해서만 동작하는 스텁 핸들러를 등록한다.
+    ///
+    /// 등록된 URL과 정확히 일치하는 요청만 이 핸들러로 응답하고,
+    /// 그 외 URL은 `defaultHandler`로 fallback한다. URL이 서로 다르면 키가 충돌하지 않아
+    /// 병렬 테스트에서도 핸들러가 덮어써질 위험이 없다.
+    public static func register(
+        for url: URL,
+        handler: @escaping (URLRequest) -> Result<(Data, HTTPURLResponse), Error>
+    ) {
+        lock.withLock {
+            perURLHandlers[url] = handler
+        }
+    }
+
+    /// 등록된 모든 핸들러를 제거한다. tearDown에서 호출해 다음 테스트로 누수되지 않도록 한다.
     public static func reset() {
         lock.withLock {
-            handler = nil
+            defaultHandler = nil
+            perURLHandlers.removeAll()
         }
     }
 
@@ -42,9 +62,15 @@ public final class URLProtocolStub: URLProtocol {
     }
 
     override public func startLoading() {
-        let currentHandler = URLProtocolStub.lock.withLock { URLProtocolStub.handler }
+        let requestedURL = request.url
+        let resolved = URLProtocolStub.lock.withLock { () -> ((URLRequest) -> Result<(Data, HTTPURLResponse), Error>)? in
+            if let url = requestedURL, let perURL = URLProtocolStub.perURLHandlers[url] {
+                return perURL
+            }
+            return URLProtocolStub.defaultHandler
+        }
 
-        guard let handler = currentHandler else {
+        guard let handler = resolved else {
             client?.urlProtocolDidFinishLoading(self)
             return
         }
