@@ -5,10 +5,18 @@
 - 타입: `UpperCamelCase` (`SearchViewModel`, `GitHubRepository`)
 - 함수/변수: `lowerCamelCase` (`loadNextPageIfNeeded`, `recentKeywords`)
 - 상수: `lowerCamelCase` (not SCREAMING_SNAKE)
-- protocol: 명사 + `Protocol` 또는 행위 표현 (`APIClientProtocol`, `Sendable`)
-- UseCase protocol: `XxxUseCase` (impl은 `XxxUseCaseImpl`)
-- Repository protocol: `XxxRepositoryProtocol` (impl은 `XxxRepository`)
-- Mock: `MockXxx` (Testing 모듈)
+- **Protocol / Impl 규칙 (하이브리드)** — 이름을 누가 "주인공"이냐로 결정:
+  - **추상 역할이 주 이름**일 때 → protocol = 역할, impl = 역할 + `Impl`
+    - `SearchRepositoriesUseCase` (protocol) + `SearchRepositoriesUseCaseImpl` (impl)
+    - `RecentKeywordUseCase` + `RecentKeywordUseCaseImpl`
+    - `AutoCompleteUseCase` + `AutoCompleteUseCaseImpl`
+  - **구체 식별자가 주 이름**일 때 → protocol = 역할 + `Protocol`, impl = 구체 식별자
+    - `GitHubRepositoryProtocol` + `GitHubRepository`
+    - `KeyValueStorageProtocol` + `UserDefaultsStorage`
+    - `APIClientProtocol` + `URLSessionAPIClient`
+    - `ImageLoaderProtocol` + `ImageLoader`
+  - 이유: UseCase는 "무엇을 하는가"가 핵심(추상 역할이 자연스러운 1급 이름), Repository/Storage/Client는 "무엇으로 하는가"가 정체성(구체 식별자가 자연스러운 1급 이름)
+- Mock: `MockXxx` (Testing 모듈에 위치)
 - 파일명: 타입명과 동일 (`SearchViewModel.swift`)
 
 ## 코드 규칙

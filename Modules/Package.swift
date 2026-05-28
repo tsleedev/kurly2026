@@ -5,25 +5,23 @@ let package = Package(
     name: "Modules",
     platforms: [.iOS(.v17)],
     products: [
+        // Public products = App이 쓸 수 있는 것만 노출.
+        // *Testing 타겟은 product로 노출하지 않음 — 같은 패키지 내 testTarget이
+        // targets 배열의 이름으로 직접 의존 가능. 외부에 Mock 유출 방지.
         .library(name: "SearchInterface", targets: ["SearchInterface"]),
         .library(name: "Search", targets: ["Search"]),
-        .library(name: "SearchTesting", targets: ["SearchTesting"]),
 
         .library(name: "WebViewInterface", targets: ["WebViewInterface"]),
         .library(name: "WebView", targets: ["WebView"]),
-        .library(name: "WebViewTesting", targets: ["WebViewTesting"]),
 
         .library(name: "NetworkInterface", targets: ["NetworkInterface"]),
         .library(name: "Network", targets: ["Network"]),
-        .library(name: "NetworkTesting", targets: ["NetworkTesting"]),
 
         .library(name: "StorageInterface", targets: ["StorageInterface"]),
         .library(name: "Storage", targets: ["Storage"]),
-        .library(name: "StorageTesting", targets: ["StorageTesting"]),
 
         .library(name: "ImageLoadingInterface", targets: ["ImageLoadingInterface"]),
         .library(name: "ImageLoading", targets: ["ImageLoading"]),
-        .library(name: "ImageLoadingTesting", targets: ["ImageLoadingTesting"]),
     ],
     dependencies: [
         .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.15.0"),
