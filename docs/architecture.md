@@ -83,6 +83,29 @@ WebView  ──► WebViewInterface
   - 이유: `Data` 같은 generic 타입으로 우회하면 (1) 캐시 효율 저하(매 호출 디코딩), (2) 테스트 mock 복잡, (3) 실무 표준(Kingfisher, SDWebImage 등) 패턴과 어긋남
   - 적용 기준: "OS API 추상화"가 명백한 경우로 한정. Camera, Location, Notification 등 OS 의존성이 본질인 인프라에 한해 같은 기준 적용
 
+## Interface 추상화 규칙
+
+외부 IO(Network, Storage, Image, Repository)를 추상화하는 모든 protocol은 **async 메서드**로 정의한다.
+
+### 이유
+
+1. **향후 store 교체 안정성** — UserDefaults → CoreData/SwiftData/Remote 등으로 교체 시 인터페이스 시그니처를 바꾸지 않아도 됨
+2. **컴파일러가 thread-safety를 보장** — 구현체가 `actor`를 채택할 수 있어 `NSLock + @unchecked Sendable` 패턴 불필요
+3. **data race 원천 차단** — sync protocol에 `@unchecked Sendable`로 lock을 감싸는 패턴은 lock 밖 읽기 오류가 컴파일 타임에 잡히지 않음
+
+### 예외
+
+순수 계산/변환 함수(Mapper, Formatter 등)는 부작용과 I/O가 없으므로 sync 유지.
+
+### 적용 범위
+
+| 분류 | async 필수 | 예외(sync 유지) |
+|---|---|---|
+| Storage (`KeyValueStorageProtocol`) | `data`, `setData`, `removeObject` | — |
+| Repository (`RecentKeywordRepositoryProtocol`, `GitHubRepositoryProtocol`) | 전 메서드 | — |
+| UseCase (`RecentKeywordUseCase`, `AutoCompleteUseCase`, `SearchRepositoriesUseCase`) | 전 메서드 | — |
+| Mapper | — | 전 메서드 |
+
 ## Router 패턴
 
 - `AppRouter`(`@Observable`, `@MainActor`)가 `NavigationStack`의 path를 보유

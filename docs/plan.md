@@ -27,7 +27,7 @@
 | 아키텍처 | **Modular + Clean Architecture (Vertical Slicing)** | Feature 단위 모듈 분리 |
 | 모듈 구조 패턴 | **microfeatures 5-target** | Interface / Source / Testing / Tests / Example |
 | 프로젝트 도구 | **SwiftPM only** | Tuist 미사용 (과제 규모 대비 오버킬) |
-| 비동기 | **async / await + Task** | iOS 17+ 안정. debounce는 `Clock` 주입 + `clock.sleep(for:)` |
+| 비동기 | **async / await + Task** | iOS 17+ 안정. debounce는 `Clock` 주입 + `clock.sleep(for:)`. 외부 IO/Storage/Repository 추상화는 모두 async. 구현은 actor 또는 final class wrapper로. |
 | ViewModel | **`@Observable` 매크로** | SwiftUI 1급 시민. View가 자동 추적 |
 | 화면 전환 | **Router 패턴 + NavigationStack** | `@Observable AppRouter` + path 바인딩 |
 | WebView | **`UIViewRepresentable`로 `WKWebView` wrap** | SwiftUI 메인 + 필요한 곳만 UIKit bridge |
@@ -275,19 +275,26 @@ public struct RecentKeyword: Equatable, Codable, Hashable {
     public let searchedAt: Date
 }
 
-public protocol SearchRepositoriesUseCase {
+public protocol SearchRepositoriesUseCase: Sendable {
     func execute(query: String, page: Int) async throws -> SearchResult
 }
 
-public protocol RecentKeywordUseCase {
-    func recent() -> [RecentKeyword]
-    func save(_ keyword: String)
-    func delete(_ keyword: String)
-    func deleteAll()
+public protocol RecentKeywordRepositoryProtocol: Sendable {
+    func all() async -> [RecentKeyword]
+    func append(_ keyword: String, at date: Date) async
+    func remove(_ keyword: String) async
+    func removeAll() async
 }
 
-public protocol AutoCompleteUseCase {
-    func suggestions(for prefix: String) -> [RecentKeyword]
+public protocol RecentKeywordUseCase: Sendable {
+    func recent() async -> [RecentKeyword]
+    func save(_ keyword: String) async
+    func delete(_ keyword: String) async
+    func deleteAll() async
+}
+
+public protocol AutoCompleteUseCase: Sendable {
+    func suggestions(for prefix: String) async -> [RecentKeyword]
 }
 
 // Destinations — AppRouter가 navigationDestination 분기에 사용.
@@ -791,15 +798,19 @@ jobs:
 | 4 | `feat/core-storage` | StorageInterface + UserDefaultsStorage + InMemoryStorage + Tests | 1 |
 | 5 | `feat/core-image-loading` | ImageLoader (actor + NSCache) + CachedAsyncImage + Tests | 1 |
 | 6 | `feat/search-domain` | SearchInterface (Entity, UseCase protocol) + UseCase Impl + Mock + Tests | 1 |
-| 7 | `feat/search-data` | DTO, Mapper, GitHubRepository, RecentKeywordRepository + Tests | 3, 4, 6 |
-| 8 | `feat/search-screen` | SearchView + SearchViewModel + RecentKeyword/전체삭제 Alert + ViewModel Tests | 6, 7 |
-| 9 | `feat/auto-complete` | 자동완성 debounce + 자동완성 상태 전환 + Tests | 8 |
-| 10 | `feat/search-result-screen` | SearchResultView + ViewModel + List + 셀 + ViewModel Tests | 6, 7, 5 |
-| 11 | `feat/infinite-scroll` | 무한 스크롤 트리거 + 페이지 누적 + Tests | 10 |
-| 12 | `feat/webview` | WKWebViewRepresentable + RepositoryWebView + Tests | 1 |
-| 13 | `feat/app-router-di` | AppDIContainer + AppRouter + AppRootView + NavigationStack 조립 (모든 화면 연결) | 8, 10, 12 |
-| 14 | `chore/snapshot-tests` | SearchView / SearchResultView Snapshot 테스트 (record → commit) | 13 |
-| 15 | `chore/readme-final` | README 최종 정리: 아키텍처 다이어그램, CI 배지, AI 활용 내역, 스크린샷. (각 PR이 자기 변경분은 README에 점진 반영하되, 이 PR에서 전체 톤/구조를 마무리) | 14 |
+| 7 | `chore/lint-pin-and-policy` | SwiftLint 0.63.2 false positive 회피 + Interface 분류 정책 추가 | 1 |
+| 8 | `chore/network-polish` | URLSessionAPIClient `@unchecked Sendable` + URLProtocolStub URL별 핸들러 | 3 |
+| 9 | `feat/search-domain` | Search 도메인 레이어 도입 (SearchInterface, UseCase Impl, Mock, Tests) | 1 |
+| R | `refactor/async-actor-migration` | protocol async 통일 + actor 마이그레이션 + 문서 정리 (본 PR) | 9 |
+| 10 | `feat/search-data` | DTO, Mapper, GitHubRepository, RecentKeywordRepository + Tests | 3, 4, 9 |
+| 11 | `feat/search-screen` | SearchView + SearchViewModel + RecentKeyword/전체삭제 Alert + ViewModel Tests | 9, 10 |
+| 12 | `feat/auto-complete` | 자동완성 debounce + 자동완성 상태 전환 + Tests | 11 |
+| 13 | `feat/search-result-screen` | SearchResultView + ViewModel + List + 셀 + ViewModel Tests | 9, 10, 5 |
+| 14 | `feat/infinite-scroll` | 무한 스크롤 트리거 + 페이지 누적 + Tests | 13 |
+| 15 | `feat/webview` | WKWebViewRepresentable + RepositoryWebView + Tests | 1 |
+| 16 | `feat/app-router-di` | AppDIContainer + AppRouter + AppRootView + NavigationStack 조립 (모든 화면 연결) | 11, 13, 15 |
+| 17 | `chore/snapshot-tests` | SearchView / SearchResultView Snapshot 테스트 (record → commit) | 16 |
+| 18 | `chore/readme-final` | README 최종 정리: 아키텍처 다이어그램, CI 배지, AI 활용 내역, 스크린샷. (각 PR이 자기 변경분은 README에 점진 반영하되, 이 PR에서 전체 톤/구조를 마무리) | 17 |
 
 > 의존성이 있는 PR은 의존 PR이 머지된 후 작업 시작. 병렬 가능한 PR(3, 4, 5)은 동시 진행 가능.
 
@@ -949,3 +960,16 @@ SwiftUI + Modular Clean Architecture + microfeatures.
    - Settings → Branches → main → Require pull request, require status checks (test, lint)
 2. **GitHub Public 설정 확인** (제출 시점)
 3. **Gemini PR 자동 리뷰**: 별도 관리되는 워크플로가 정상 동작하는지 첫 PR에서 확인 (코멘트가 달리는지)
+
+---
+
+## 변경 로그
+
+실제 머지된 PR 순서 (계획 외 추가/변경분 기록).
+
+| PR | 브랜치 | 요약 |
+|---|---|---|
+| #7 | `chore/lint-pin-and-policy` | SwiftLint 0.63.2 false positive 회피 + Interface 분류 정책 추가 |
+| #8 | `chore/network-polish` | URLSessionAPIClient `@unchecked Sendable` + URLProtocolStub URL별 핸들러 |
+| #9 | `feat/search-domain` | Search 도메인 레이어 도입 (SearchInterface, UseCase Impl, Mock 5종, Tests) |
+| (본 PR) | `refactor/async-actor-migration` | protocol async 통일 + actor 마이그레이션 + 문서 정리. PR #9 Gemini 리뷰 지적(Mock data race)의 근본 원인인 sync protocol 패턴을 제거하고 Storage·Search 전 영역을 async/actor로 통일. |
