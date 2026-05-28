@@ -1,3 +1,3 @@
 import XCTest
 
-final class _SkeletonTests: XCTestCase {}
+final class NetworkTests: XCTestCase {}

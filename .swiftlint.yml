@@ -9,6 +9,10 @@ opt_in_rules:
   - explicit_init
   - redundant_nil_coalescing
   - sorted_first_last
+  - implicitly_unwrapped_optional
+
+# unused_import는 analyzer 전용 룰 (`swiftlint analyze`로만 실행)
+analyzer_rules:
   - unused_import
 
 force_cast: error
@@ -16,6 +20,10 @@ force_try: error
 force_unwrapping: error
 implicitly_unwrapped_optional:
   severity: warning
+
+# trailing comma는 diff 친화적이라 의도적으로 사용. 일관 강제.
+trailing_comma:
+  mandatory_comma: true
 
 line_length:
   warning: 140
