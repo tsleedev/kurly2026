@@ -36,9 +36,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-spm-
 
-      - name: SwiftPM Test (Modules)
+      - name: SwiftPM Test (Modules, macOS-safe targets)
         working-directory: Modules
         run: swift test --parallel
+
+      - name: Xcode Test (UIKit modules — iOS Simulator)
+        # UIKit 의존 모듈(ImageLoading 등)은 swift test 가 macOS 로 컴파일돼 UIKit 없음.
+        # Modules 디렉토리의 Modules-Package 자동 scheme 으로 iOS Simulator 에서 직접 실행.
+        working-directory: Modules
+        run: |
+          xcodebuild test \
+            -scheme "Modules-Package" \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -only-testing:ImageLoadingTests
 
       - name: Xcode Build (App)
         # App에 자체 test target이 없어 xcodebuild test는 사용 불가.
