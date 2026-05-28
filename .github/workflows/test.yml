@@ -1,0 +1,51 @@
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# 동일 브랜치에서 새 push 발생 시 이전 실행 취소
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Cache SwiftPM
+        uses: actions/cache@v4
+        with:
+          path: |
+            Modules/.build
+            ~/Library/Caches/org.swift.swiftpm
+            ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-spm-${{ hashFiles('Modules/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: SwiftPM Test (Modules)
+        working-directory: Modules
+        run: swift test --parallel
+
+      - name: Xcode Build (App)
+        # App에 자체 test target이 없어 xcodebuild test는 사용 불가.
+        # App + 연결된 Modules가 시뮬레이터 타깃으로 컴파일되는지만 확인.
+        # 실제 스냅샷 테스트는 PR #14에서 도입되며, 그때 xcodebuild test로 전환 검토.
+        run: |
+          xcodebuild build \
+            -project App/KurlyGitHubSearchApp.xcodeproj \
+            -scheme KurlyGitHubSearchApp \
+            -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest'
