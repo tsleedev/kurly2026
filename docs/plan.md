@@ -81,97 +81,97 @@ KurlyGitHubSearch/                       ← Git Repo Root
 │   ├── Package.swift                    ← 모든 target 정의
 │   └── Sources/
 │       │
-│       ├── Search/                      ← Feature 모듈 (microfeatures)
-│       │   ├── Interface/               ← target: SearchInterface
-│       │   │   ├── UseCases/
-│       │   │   │   ├── SearchRepositoriesUseCase.swift   (protocol)
-│       │   │   │   ├── RecentKeywordUseCase.swift        (protocol)
-│       │   │   │   └── AutoCompleteUseCase.swift         (protocol)
-│       │   │   ├── Entities/
-│       │   │   │   ├── Repository.swift
-│       │   │   │   ├── Owner.swift
-│       │   │   │   ├── SearchResult.swift
-│       │   │   │   └── RecentKeyword.swift
-│       │   │   ├── Destinations/
-│       │   │   │   └── SearchResultDestination.swift   (struct: query — AppRouter가 사용)
-│       │   │   └── Repositories/
-│       │   │       ├── GitHubRepositoryProtocol.swift
-│       │   │       └── RecentKeywordRepositoryProtocol.swift
+│       ├── Core/                        ← 공용 인프라 모듈 그룹
+│       │   ├── Network/
+│       │   │   ├── Interface/           ← target: NetworkInterface
+│       │   │   │   ├── APIClientProtocol.swift
+│       │   │   │   ├── Endpoint.swift
+│       │   │   │   ├── HTTPMethod.swift
+│       │   │   │   └── NetworkError.swift
+│       │   │   ├── Source/              ← target: Network
+│       │   │   │   └── URLSessionAPIClient.swift
+│       │   │   ├── Testing/             ← target: NetworkTesting
+│       │   │   │   ├── MockAPIClient.swift
+│       │   │   │   └── URLProtocolStub.swift
+│       │   │   └── Tests/               ← target: NetworkTests
 │       │   │
-│       │   ├── Source/                  ← target: Search
-│       │   │   ├── Presentation/
-│       │   │   │   ├── SearchView.swift              (SwiftUI View)
-│       │   │   │   ├── SearchViewModel.swift         (@Observable)
-│       │   │   │   ├── SearchResultView.swift        (SwiftUI View)
-│       │   │   │   ├── SearchResultViewModel.swift   (@Observable)
-│       │   │   │   └── Components/
-│       │   │   │       ├── RecentKeywordRow.swift
-│       │   │   │       ├── AutoCompleteRow.swift
-│       │   │   │       └── RepositoryRow.swift
-│       │   │   ├── Domain/
-│       │   │   │   ├── SearchRepositoriesUseCaseImpl.swift
-│       │   │   │   ├── RecentKeywordUseCaseImpl.swift
-│       │   │   │   └── AutoCompleteUseCaseImpl.swift
-│       │   │   └── Data/
-│       │   │       ├── DTOs/ (RepositoryDTO, SearchResultDTO)
-│       │   │       ├── Repositories/ (GitHubRepository, RecentKeywordRepository)
-│       │   │       └── Mappers/ (RepositoryDTO+Mapping)
+│       │   ├── Storage/
+│       │   │   ├── Interface/           ← target: StorageInterface
+│       │   │   │   └── KeyValueStorageProtocol.swift
+│       │   │   ├── Source/              ← target: Storage
+│       │   │   │   └── UserDefaultsStorage.swift
+│       │   │   ├── Testing/             ← target: StorageTesting
+│       │   │   │   └── InMemoryStorage.swift
+│       │   │   └── Tests/               ← target: StorageTests
 │       │   │
-│       │   ├── Testing/                 ← target: SearchTesting
-│       │   │   ├── MockSearchRepositoriesUseCase.swift
-│       │   │   ├── MockRecentKeywordUseCase.swift
-│       │   │   └── MockAutoCompleteUseCase.swift
-│       │   │
-│       │   ├── Tests/                   ← target: SearchTests
-│       │   │   ├── Domain/   (UseCase 단위테스트)
-│       │   │   ├── Data/     (Repository, Mapper 테스트)
-│       │   │   ├── Presentation/ (ViewModel 테스트)
-│       │   │   └── Snapshot/ (View 스냅샷)
-│       │   │
-│       │   └── Example/                 ← target: SearchExample (선택적)
-│       │       └── SearchExampleApp.swift   (SwiftUI Preview용 단독 데모)
+│       │   └── ImageLoading/
+│       │       ├── Interface/           ← target: ImageLoadingInterface
+│       │       │   └── ImageLoaderProtocol.swift
+│       │       ├── Source/              ← target: ImageLoading
+│       │       │   ├── ImageLoader.swift            (NSCache + URLSession)
+│       │       │   └── CachedAsyncImage.swift       (SwiftUI View)
+│       │       ├── Testing/             ← target: ImageLoadingTesting
+│       │       │   └── MockImageLoader.swift
+│       │       └── Tests/               ← target: ImageLoadingTests
 │       │
-│       ├── WebView/                     ← Feature 모듈 (microfeatures)
-│       │   ├── Interface/               ← target: WebViewInterface
-│       │   │   └── WebViewDestination.swift   (struct: url, title — AppRouter가 사용)
-│       │   ├── Source/                  ← target: WebView
-│       │   │   ├── RepositoryWebView.swift          (SwiftUI View, init(destination:))
-│       │   │   └── WKWebViewRepresentable.swift     (UIViewRepresentable)
-│       │   ├── Testing/                 ← target: WebViewTesting (필요 시)
-│       │   └── Tests/                   ← target: WebViewTests
-│       │
-│       └── Core/                        ← 공용 인프라
-│           ├── Network/
-│           │   ├── Interface/           ← target: NetworkInterface
-│           │   │   ├── APIClientProtocol.swift
-│           │   │   ├── Endpoint.swift
-│           │   │   ├── HTTPMethod.swift
-│           │   │   └── NetworkError.swift
-│           │   ├── Source/              ← target: Network
-│           │   │   └── URLSessionAPIClient.swift
-│           │   ├── Testing/             ← target: NetworkTesting
-│           │   │   ├── MockAPIClient.swift
-│           │   │   └── URLProtocolStub.swift
-│           │   └── Tests/               ← target: NetworkTests
+│       └── Feature/                     ← 비즈니스 화면 모듈 그룹
+│           ├── Search/                  ← Feature 모듈 (microfeatures)
+│           │   ├── Interface/           ← target: SearchInterface
+│           │   │   ├── UseCases/
+│           │   │   │   ├── SearchRepositoriesUseCase.swift   (protocol)
+│           │   │   │   ├── RecentKeywordUseCase.swift        (protocol)
+│           │   │   │   └── AutoCompleteUseCase.swift         (protocol)
+│           │   │   ├── Entities/
+│           │   │   │   ├── Repository.swift
+│           │   │   │   ├── Owner.swift
+│           │   │   │   ├── SearchResult.swift
+│           │   │   │   └── RecentKeyword.swift
+│           │   │   ├── Destinations/
+│           │   │   │   └── SearchResultDestination.swift   (struct: query — AppRouter가 사용)
+│           │   │   └── Repositories/
+│           │   │       ├── GitHubRepositoryProtocol.swift
+│           │   │       └── RecentKeywordRepositoryProtocol.swift
+│           │   │
+│           │   ├── Source/              ← target: Search
+│           │   │   ├── Presentation/
+│           │   │   │   ├── SearchView.swift              (SwiftUI View)
+│           │   │   │   ├── SearchViewModel.swift         (@Observable)
+│           │   │   │   ├── SearchResultView.swift        (SwiftUI View)
+│           │   │   │   ├── SearchResultViewModel.swift   (@Observable)
+│           │   │   │   └── Components/
+│           │   │   │       ├── RecentKeywordRow.swift
+│           │   │   │       ├── AutoCompleteRow.swift
+│           │   │   │       └── RepositoryRow.swift
+│           │   │   ├── Domain/
+│           │   │   │   ├── SearchRepositoriesUseCaseImpl.swift
+│           │   │   │   ├── RecentKeywordUseCaseImpl.swift
+│           │   │   │   └── AutoCompleteUseCaseImpl.swift
+│           │   │   └── Data/
+│           │   │       ├── DTOs/ (RepositoryDTO, SearchResultDTO)
+│           │   │       ├── Repositories/ (GitHubRepository, RecentKeywordRepository)
+│           │   │       └── Mappers/ (RepositoryDTO+Mapping)
+│           │   │
+│           │   ├── Testing/             ← target: SearchTesting
+│           │   │   ├── MockSearchRepositoriesUseCase.swift
+│           │   │   ├── MockRecentKeywordUseCase.swift
+│           │   │   └── MockAutoCompleteUseCase.swift
+│           │   │
+│           │   ├── Tests/               ← target: SearchTests
+│           │   │   ├── Domain/   (UseCase 단위테스트)
+│           │   │   ├── Data/     (Repository, Mapper 테스트)
+│           │   │   ├── Presentation/ (ViewModel 테스트)
+│           │   │   └── Snapshot/ (View 스냅샷)
+│           │   │
+│           │   └── (Example 생략 — SwiftUI #Preview로 대체)
 │           │
-│           ├── Storage/
-│           │   ├── Interface/           ← target: StorageInterface
-│           │   │   └── KeyValueStorageProtocol.swift
-│           │   ├── Source/              ← target: Storage
-│           │   │   └── UserDefaultsStorage.swift
-│           │   ├── Testing/             ← target: StorageTesting
-│           │   │   └── InMemoryStorage.swift
-│           │   └── Tests/               ← target: StorageTests
-│           │
-│           └── ImageLoading/
-│               ├── Interface/           ← target: ImageLoadingInterface
-│               │   └── ImageLoaderProtocol.swift
-│               ├── Source/              ← target: ImageLoading
-│               │   ├── ImageLoader.swift            (NSCache + URLSession)
-│               │   └── CachedAsyncImage.swift       (SwiftUI View)
-│               ├── Testing/             ← target: ImageLoadingTesting
-│               │   └── MockImageLoader.swift
-│               └── Tests/               ← target: ImageLoadingTests
+│           └── WebView/                 ← Feature 모듈 (microfeatures)
+│               ├── Interface/           ← target: WebViewInterface
+│               │   └── WebViewDestination.swift   (struct: url, title — AppRouter가 사용)
+│               ├── Source/              ← target: WebView
+│               │   ├── RepositoryWebView.swift          (SwiftUI View, init(destination:))
+│               │   └── WKWebViewRepresentable.swift     (UIViewRepresentable)
+│               ├── Testing/             ← target: WebViewTesting (필요 시)
+│               └── Tests/               ← target: WebViewTests
 │
 ├── .github/
 │   └── workflows/
@@ -219,16 +219,16 @@ let package = Package(
                  from: "1.15.0"),
     ],
     targets: [
-        // === Search Feature ===
-        .target(name: "SearchInterface", path: "Sources/Search/Interface"),
+        // === Feature/Search ===
+        .target(name: "SearchInterface", path: "Sources/Feature/Search/Interface"),
         .target(name: "Search",
                 dependencies: ["SearchInterface",
                                "NetworkInterface", "StorageInterface",
                                "ImageLoadingInterface"],
-                path: "Sources/Search/Source"),
+                path: "Sources/Feature/Search/Source"),
         .target(name: "SearchTesting",
                 dependencies: ["SearchInterface"],
-                path: "Sources/Search/Testing"),
+                path: "Sources/Feature/Search/Testing"),
         .testTarget(name: "SearchTests",
                     dependencies: [
                         "Search", "SearchTesting",
@@ -236,11 +236,8 @@ let package = Package(
                         .product(name: "SnapshotTesting",
                                  package: "swift-snapshot-testing")
                     ],
-                    path: "Sources/Search/Tests"),
-        .executableTarget(name: "SearchExample",
-                          dependencies: ["Search"],
-                          path: "Sources/Search/Example"),
-        // === WebView, Network, Storage, ImageLoading (동일 패턴) ===
+                    path: "Sources/Feature/Search/Tests"),
+        // === Feature/WebView, Core/Network, Core/Storage, Core/ImageLoading (동일 패턴) ===
     ]
 )
 ```
