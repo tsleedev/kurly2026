@@ -2,6 +2,11 @@ name: Test
 
 on:
   pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - '.gitignore'
+      - '.github/ISSUE_TEMPLATE/**'
   push:
     branches: [main]
 
@@ -47,7 +52,7 @@ jobs:
         run: |
           xcodebuild test \
             -scheme "Modules-Package" \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
             -only-testing:ImageLoadingTests
 
       - name: Xcode Build (App)
