@@ -55,10 +55,13 @@ struct WKWebViewRepresentable: UIViewRepresentable {
         func observeProgress(of webView: WKWebView) {
             // self를 capture하지 않고 Binding만 capture — view tear-down 후 KVO 잔여 호출이
             // dead self를 건드릴 위험 없음. KVO는 main thread에서 fire하지만 안전을 위해 MainActor로 hop.
-            progressObservation = webView.observe(\.estimatedProgress, options: [.new]) { [progress] _, change in
+            // `$progress`가 Binding<Double>이고, 이를 로컬 상수에 받아 closure가 캡처한다.
+            // (capture list에 `[progress]`를 쓰면 wrappedValue인 Double을 복사 캡처해 wrappedValue 할당이 안 됨)
+            let progressBinding = $progress
+            progressObservation = webView.observe(\.estimatedProgress, options: [.new]) { _, change in
                 guard let value = change.newValue else { return }
                 Task { @MainActor in
-                    progress.wrappedValue = value
+                    progressBinding.wrappedValue = value
                 }
             }
         }
