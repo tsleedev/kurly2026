@@ -8,7 +8,7 @@ import SearchInterface
 /// 본 PR은 최근 검색만 다룬다. 자동완성 UI/디바운스는 후속 PR에서 도입.
 public struct SearchView: View {
 
-    @Bindable public var viewModel: SearchViewModel
+    public let viewModel: SearchViewModel
     @State private var deleteTarget: RecentKeyword?
     @State private var showDeleteAllAlert = false
 
@@ -17,7 +17,8 @@ public struct SearchView: View {
     }
 
     public var body: some View {
-        contentList
+        @Bindable var viewModel = viewModel
+        return contentList
             .navigationTitle("Search")
             .searchable(text: $viewModel.query, prompt: "저장소 검색")
             .onSubmit(of: .search) {

@@ -59,6 +59,7 @@ final class SearchViewModelTests: XCTestCase {
         let saves = await mock.capturedSaves
         XCTAssertEqual(saves, ["swift"])
         XCTAssertEqual(requested, "swift")
+        XCTAssertEqual(sut.query, "swift")
     }
 
     func test_onSubmit_이후_recentKeywords가_갱신된다() async {

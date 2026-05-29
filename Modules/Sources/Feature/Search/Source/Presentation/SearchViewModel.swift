@@ -46,6 +46,7 @@ public final class SearchViewModel {
     public func onSubmit() async {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+        query = trimmed
         await recentKeywordUseCase.save(trimmed)
         recentKeywords = await recentKeywordUseCase.recent()
         onRequestSearch?(trimmed)

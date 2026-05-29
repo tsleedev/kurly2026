@@ -21,7 +21,7 @@ struct RecentKeywordRow: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderless)
 
             Button(action: onTapDelete) {
                 Image(systemName: "xmark")
@@ -30,7 +30,7 @@ struct RecentKeywordRow: View {
                     .padding(8)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderless)
             .accessibilityLabel("\(keyword.keyword) 검색어 삭제")
         }
     }
