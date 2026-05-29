@@ -5,7 +5,7 @@ import ImageLoadingInterface
 import NetworkInterface
 import SearchInterface
 
-/// 검색 결과 화면. 본 PR은 page=1만 보여준다.
+/// 검색 결과 화면. 무한 스크롤로 페이지 누적.
 public struct SearchResultView: View {
 
     public let viewModel: SearchResultViewModel
@@ -65,14 +65,52 @@ public struct SearchResultView: View {
                             )
                         }
                         .buttonStyle(.borderless)
+                        .task(id: repository.id) {
+                            await viewModel.loadNextPageIfNeeded(currentItem: repository)
+                        }
                     }
                 } header: {
                     Text("\(formatted(result.totalCount))개 저장소")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
+                Section {
+                    paginationFooter
+                }
             }
             .listStyle(.plain)
+        }
+    }
+
+    @ViewBuilder
+    private var paginationFooter: some View {
+        switch viewModel.paginationState {
+        case .idle:
+            EmptyView()
+        case .loading:
+            HStack {
+                Spacer()
+                ProgressView()
+                    .padding(.vertical, 12)
+                Spacer()
+            }
+            .listRowSeparator(.hidden)
+        case .failed(let error):
+            VStack(spacing: 8) {
+                Text("다음 페이지를 불러오지 못했어요")
+                    .font(.subheadline)
+                Text(message(for: error))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                Button("다시 시도") {
+                    Task { await viewModel.retryNextPage() }
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .listRowSeparator(.hidden)
         }
     }
 
