@@ -7,12 +7,8 @@ import WebViewInterface
 
 /// 앱 루트 View. NavigationStack을 들고 AppRouter의 path 변화에 따라 화면을 push/pop.
 ///
-/// ViewModel은 **@State로 보존**해 View body 재평가마다 새로 만들어지지 않도록 한다 — 검색어, 최근 검색,
-/// 디바운스 상태 등이 부모 re-render 시 유실되는 버그를 방지.
+/// router와 root SearchViewModel은 Container가 소유 — AppRootView가 매 init마다 새로 만드는 비용 0.
 struct AppRootView: View {
-
-    @State private var router: AppRouter
-    @State private var searchViewModel: SearchViewModel
 
     private let container: AppDIContainer
     private let imageLoader: any ImageLoaderProtocol
@@ -20,21 +16,18 @@ struct AppRootView: View {
     init(container: AppDIContainer) {
         self.container = container
         self.imageLoader = container.makeImageLoader()
-        let router = AppRouter()
-        self._router = State(initialValue: router)
-        self._searchViewModel = State(initialValue: container.makeSearchViewModel(router: router))
     }
 
     var body: some View {
-        NavigationStack(path: $router.path) {
-            SearchView(viewModel: searchViewModel)
+        @Bindable var router = container.router
+        return NavigationStack(path: $router.path) {
+            SearchView(viewModel: container.searchViewModel)
                 .navigationDestination(for: AppRouter.Destination.self) { destination in
                     switch destination {
                     case .searchResult(let searchResult):
                         SearchResultDestinationView(
                             destination: searchResult,
                             container: container,
-                            router: router,
                             imageLoader: imageLoader
                         )
                     case .webView(let webViewDestination):
@@ -57,14 +50,10 @@ private struct SearchResultDestinationView: View {
     init(
         destination: SearchResultDestination,
         container: AppDIContainer,
-        router: AppRouter,
         imageLoader: any ImageLoaderProtocol
     ) {
         self.imageLoader = imageLoader
-        self._viewModel = State(initialValue: container.makeSearchResultViewModel(
-            destination: destination,
-            router: router
-        ))
+        self._viewModel = State(initialValue: container.makeSearchResultViewModel(destination: destination))
     }
 
     var body: some View {
