@@ -166,4 +166,66 @@ public struct SearchResultView: View {
         return formatter
     }()
 }
+
+#if DEBUG
+#Preview("loading") {
+    NavigationStack {
+        SearchResultView(
+            viewModel: SearchResultViewModel(
+                query: "swift",
+                searchUseCase: StubSearchRepositoriesUseCase(.neverResolve)
+            ),
+            imageLoader: StubImageLoader()
+        )
+    }
+}
+
+#Preview("loaded - 저장소 N개") {
+    NavigationStack {
+        SearchResultView(
+            viewModel: SearchResultViewModel(
+                query: "swift",
+                searchUseCase: StubSearchRepositoriesUseCase(.success(PreviewFixture.searchResult))
+            ),
+            imageLoader: StubImageLoader()
+        )
+    }
+}
+
+#Preview("loaded - 빈 결과") {
+    NavigationStack {
+        SearchResultView(
+            viewModel: SearchResultViewModel(
+                query: "swift",
+                searchUseCase: StubSearchRepositoriesUseCase(.success(PreviewFixture.emptySearchResult))
+            ),
+            imageLoader: StubImageLoader()
+        )
+    }
+}
+
+#Preview("failed - rate limited") {
+    NavigationStack {
+        SearchResultView(
+            viewModel: SearchResultViewModel(
+                query: "swift",
+                searchUseCase: StubSearchRepositoriesUseCase(.failure(.rateLimited(retryAfter: 30)))
+            ),
+            imageLoader: StubImageLoader()
+        )
+    }
+}
+
+#Preview("failed - transport") {
+    NavigationStack {
+        SearchResultView(
+            viewModel: SearchResultViewModel(
+                query: "swift",
+                searchUseCase: StubSearchRepositoriesUseCase(.failure(.transport))
+            ),
+            imageLoader: StubImageLoader()
+        )
+    }
+}
+#endif
 #endif

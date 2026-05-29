@@ -45,4 +45,15 @@ struct RepositoryRow: View {
         .padding(.vertical, 4)
     }
 }
+
+#if DEBUG
+#Preview {
+    List {
+        ForEach(PreviewFixture.repositories) { repository in
+            RepositoryRow(repository: repository, imageLoader: StubImageLoader())
+        }
+    }
+    .listStyle(.plain)
+}
+#endif
 #endif

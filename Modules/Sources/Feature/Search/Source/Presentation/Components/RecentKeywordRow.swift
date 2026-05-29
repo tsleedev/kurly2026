@@ -36,4 +36,15 @@ struct RecentKeywordRow: View {
     }
 }
 
+#if DEBUG
+#Preview {
+    List {
+        ForEach(PreviewFixture.recentKeywords, id: \.self) { keyword in
+            RecentKeywordRow(keyword: keyword, onTap: {}, onTapDelete: {})
+        }
+    }
+    .listStyle(.plain)
+}
+#endif
+
 #endif

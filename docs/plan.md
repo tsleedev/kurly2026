@@ -1014,3 +1014,4 @@ SwiftUI + Modular Clean Architecture + microfeatures.
 | #9 | `feat/search-domain` | Search 도메인 레이어 도입 (SearchInterface, UseCase Impl, Mock 5종, Tests) |
 | (본 PR) | `refactor/async-actor-migration` | protocol async 통일 + actor 마이그레이션 + 문서 정리. PR #9 Gemini 리뷰 지적(Mock data race)의 근본 원인인 sync protocol 패턴을 제거하고 Storage·Search 전 영역을 async/actor로 통일. |
 | (본 PR) | `refactor/search-result-inline-state` | 예시 화면 재분석 결과 검색 결과가 별도 push가 아닌 same-screen state임을 확인. SearchViewModel.State에 `.results(SearchResultViewModel)` 추가, AppRouter `.searchResult` 제거, SearchResultView의 navigationTitle 제거(부모 "Search"로 통합), 결과 스냅샷 re-record. |
+| (본 PR) | `feat/swiftui-previews` | Search 모듈 5개 View 에 `#Preview` 12개 추가 (스냅샷 테스트 케이스와 일치). Source 내 `PreviewSupport.swift` 에 Stub UseCase / ImageLoader / Fixture 를 `#if DEBUG` 가드로 정의 — SearchTesting Mock 외부 유출 방지 정책 유지. WebView 는 단순 wrapper 라 Preview 제외. |

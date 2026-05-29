@@ -34,4 +34,15 @@ struct AutoCompleteRow: View {
         return formatter
     }()
 }
+
+#if DEBUG
+#Preview {
+    List {
+        ForEach(PreviewFixture.recentKeywords, id: \.self) { keyword in
+            AutoCompleteRow(keyword: keyword, onTap: {})
+        }
+    }
+    .listStyle(.plain)
+}
+#endif
 #endif
