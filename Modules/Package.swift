@@ -42,7 +42,12 @@ let package = Package(
                 // 별도 UI 모듈로 분리 검토.
                 "ImageLoading",
             ],
-            path: "Sources/Feature/Search/Source"
+            path: "Sources/Feature/Search/Source",
+            swiftSettings: [
+                // SwiftPM target 은 Xcode App target 과 달리 DEBUG flag 가 자동 설정되지 않는다.
+                // SwiftUI #Preview 와 PreviewSupport.swift 의 #if DEBUG 가드가 작동하도록 명시적으로 정의.
+                .define("DEBUG", .when(configuration: .debug)),
+            ]
         ),
         .target(
             name: "SearchTesting",
