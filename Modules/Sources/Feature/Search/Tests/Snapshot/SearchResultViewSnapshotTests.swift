@@ -11,7 +11,7 @@ import SearchTesting
 @MainActor
 final class SearchResultViewSnapshotTests: XCTestCase {
 
-    private let layout: SwiftUISnapshotLayout = .device(config: .iPhone13Pro)
+    private let layout: SwiftUISnapshotLayout = .device(config: .iPhone17)
     private let precision: Float = 0.99
 
     // MARK: - State 변화

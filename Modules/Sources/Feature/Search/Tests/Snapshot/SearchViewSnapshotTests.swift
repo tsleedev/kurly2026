@@ -9,8 +9,8 @@ import SearchTesting
 @MainActor
 final class SearchViewSnapshotTests: XCTestCase {
 
-    /// iPhone 13 Pro 사이즈(390x844)로 고정. 실제 CI 시뮬레이터(iPhone 17)와 무관하게 결정론적.
-    private let layout: SwiftUISnapshotLayout = .device(config: .iPhone13Pro)
+    /// iPhone 17 (393x852) 기준. 스타일 가이드 65라인 준수.
+    private let layout: SwiftUISnapshotLayout = .device(config: .iPhone17)
     private let precision: Float = 0.99
 
     // MARK: - State.recent

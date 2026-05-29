@@ -117,8 +117,12 @@ public final class SearchResultViewModel {
             state = .loaded(result)
         } catch is CancellationError {
             // .task가 view 사라짐으로 인해 취소된 경우 — 사용자에게 에러를 보여주지 않는다.
+            // hasInitiated를 다시 false로 돌려 다음 onAppear에서 재시도 가능하게 한다
+            // (VM이 재사용되는 시나리오에서 무한 .loading에 갇히지 않도록).
+            hasInitiated = false
             return
         } catch NetworkError.cancelled {
+            hasInitiated = false
             return
         } catch let error as NetworkError {
             guard requested == generation else { return }
