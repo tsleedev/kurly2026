@@ -64,7 +64,10 @@ public final class SearchViewModel {
     // MARK: - Lifecycle
 
     public func onAppear() async {
-        state = .recent(await recentKeywordUseCase.recent())
+        let requested = generation
+        let recent = await recentKeywordUseCase.recent()
+        guard requested == generation else { return }
+        state = .recent(recent)
     }
 
     // MARK: - User actions
@@ -72,13 +75,21 @@ public final class SearchViewModel {
     public func onQueryChanged(_ newValue: String) {
         debounceTask?.cancel()
         generation &+= 1
-        let currentGeneration = generation
+        let requested = generation
+        // 빈 입력은 사용자가 즉시 최근 검색을 보길 기대 — debounce 생략하고 바로 refresh 스케줄.
+        if newValue.isEmpty {
+            debounceTask = Task { @MainActor [weak self] in
+                guard !Task.isCancelled, let self else { return }
+                await self.refreshState(for: "", generation: requested)
+            }
+            return
+        }
         let clock = self.clock
         let duration = self.debounceDuration
         debounceTask = Task { @MainActor [weak self] in
             try? await clock.sleep(for: duration)
             guard !Task.isCancelled, let self else { return }
-            await self.refreshState(for: newValue, generation: currentGeneration)
+            await self.refreshState(for: newValue, generation: requested)
         }
     }
 
@@ -87,34 +98,45 @@ public final class SearchViewModel {
         guard !trimmed.isEmpty else { return }
         query = trimmed
         invalidatePendingRefresh()
+        let requested = generation
         await recentKeywordUseCase.save(trimmed)
-        state = .recent(await recentKeywordUseCase.recent())
+        let recent = await recentKeywordUseCase.recent()
+        guard requested == generation else { return }
+        state = .recent(recent)
         onRequestSearch?(trimmed)
     }
 
     public func onTapRecent(_ keyword: String) async {
         query = keyword
         invalidatePendingRefresh()
+        let requested = generation
         await recentKeywordUseCase.save(keyword)
-        state = .recent(await recentKeywordUseCase.recent())
+        let recent = await recentKeywordUseCase.recent()
+        guard requested == generation else { return }
+        state = .recent(recent)
         onRequestSearch?(keyword)
     }
 
     public func onConfirmDelete(_ keyword: String) async {
         invalidatePendingRefresh()
+        let requested = generation
         await recentKeywordUseCase.delete(keyword)
-        state = .recent(await recentKeywordUseCase.recent())
+        let recent = await recentKeywordUseCase.recent()
+        guard requested == generation else { return }
+        state = .recent(recent)
     }
 
     public func onConfirmDeleteAll() async {
         invalidatePendingRefresh()
+        let requested = generation
         await recentKeywordUseCase.deleteAll()
+        guard requested == generation else { return }
         state = .recent([])
     }
 
     // MARK: - Private
 
-    /// 진행 중인 debounce task를 취소하고 generation을 증가시켜, 늦게 도착할 옛 refreshState 결과가 새 상태를 덮어쓰지 못하게 한다.
+    /// 진행 중인 debounce task를 취소하고 generation을 증가시켜, 늦게 도착할 옛 refresh/액션 결과가 새 상태를 덮어쓰지 못하게 한다.
     private func invalidatePendingRefresh() {
         debounceTask?.cancel()
         generation &+= 1

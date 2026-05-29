@@ -92,8 +92,14 @@ public final class TestClock: Clock, @unchecked Sendable {
     // MARK: - Test Helpers
 
     /// 시계를 `duration`만큼 진행시키고, deadline을 넘긴 sleepers를 모두 깨운다.
-    /// 깨어난 task들이 후속 await를 실행할 수 있도록 여러 번 yield한다.
+    ///
+    /// **처리 전에 flush**해서 호출자가 `Task { ... await clock.sleep(...) }` 형태로 막 스케줄한
+    /// 작업이 `_now`가 갱신되기 전에 sleeper를 등록할 수 있게 한다. 그렇지 않으면 deadline이
+    /// `(이미 advance된 _now) + duration`으로 계산돼 advance 한 번에 깨어나지 못한다.
+    ///
+    /// **처리 후에도 flush**해서 깨어난 task가 후속 await chain(actor hop 포함)을 진행하도록 한다.
     public func advance(by duration: Duration) async {
+        await Self.flushPendingTasks()
         let toResume: [CheckedContinuation<Void, Error>] = lock.withLock {
             _now = _now.advanced(by: duration)
             let ready = sleepers.filter { $0.deadline <= _now }
@@ -103,11 +109,19 @@ public final class TestClock: Clock, @unchecked Sendable {
         for continuation in toResume {
             continuation.resume()
         }
-        // 깨어난 task가 후속 await chain(actor hop 포함)을 진행할 시간 확보.
-        // 단일 actor hop은 보통 1~2 yield면 충분하지만, MainActor + 다른 actor 사이에 더 많은 hop이
-        // 끼어들 수 있어 여유 있게 반복한다. CI 슬로우 러너에서 flakiness 방지.
-        for _ in 0..<30 {
-            await Task.yield()
+        await Self.flushPendingTasks()
+    }
+
+    /// 대기 중인 task들이 실행될 시간을 강제로 확보한다.
+    ///
+    /// `Task.yield()`만으로는 동일 executor의 다른 task에 양보된다는 보장이 약하므로,
+    /// 매번 detached background task를 만들어 await함으로써 실제 context switch를 유도한다.
+    /// swift-concurrency-extras의 `megaYield` 패턴.
+    private static func flushPendingTasks() async {
+        for _ in 0..<20 {
+            await Task<Void, Never>.detached(priority: .background) {
+                await Task.yield()
+            }.value
         }
     }
 }

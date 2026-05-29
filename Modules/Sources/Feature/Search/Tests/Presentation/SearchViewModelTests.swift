@@ -142,7 +142,7 @@ final class SearchViewModelTests: XCTestCase {
         XCTAssertEqual(sut.state, .autocomplete([Self.keyword("swift", at: 1)]))
     }
 
-    func test_onQueryChanged_빈_문자열은_recent로_복귀() async {
+    func test_onQueryChanged_빈_문자열은_debounce_없이_즉시_recent로_복귀() async {
         let recent = MockRecentKeywordUseCase(stubRecent: [Self.keyword("swift", at: 1)])
         let autoComplete = MockAutoCompleteUseCase()
         let clock = TestClock()
@@ -150,7 +150,8 @@ final class SearchViewModelTests: XCTestCase {
 
         sut.onQueryChanged("")
 
-        await clock.advance(by: .milliseconds(300))
+        // debounce 없이 즉시 갱신되므로 시간 진행 없이 .zero 진행만으로 task가 완료되어야 함
+        await clock.advance(by: .zero)
 
         XCTAssertEqual(sut.state, .recent([Self.keyword("swift", at: 1)]))
         let captured = await autoComplete.capturedPrefixes
