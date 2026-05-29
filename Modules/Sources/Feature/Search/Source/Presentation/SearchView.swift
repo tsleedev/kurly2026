@@ -8,12 +8,12 @@ import SearchInterface
 /// 본 PR은 최근 검색만 다룬다. 자동완성 UI/디바운스는 후속 PR에서 도입.
 public struct SearchView: View {
 
-    @State private var viewModel: SearchViewModel
+    @Bindable public var viewModel: SearchViewModel
     @State private var deleteTarget: RecentKeyword?
     @State private var showDeleteAllAlert = false
 
     public init(viewModel: SearchViewModel) {
-        _viewModel = State(initialValue: viewModel)
+        self.viewModel = viewModel
     }
 
     public var body: some View {
@@ -62,7 +62,7 @@ public struct SearchView: View {
         } else {
             List {
                 Section {
-                    ForEach(viewModel.recentKeywords, id: \.keyword) { keyword in
+                    ForEach(viewModel.recentKeywords, id: \.self) { keyword in
                         RecentKeywordRow(
                             keyword: keyword,
                             onTap: { Task { await viewModel.onTapRecent(keyword.keyword) } },

@@ -16,6 +16,8 @@ struct RecentKeywordRow: View {
         HStack {
             Button(action: onTap) {
                 Text(keyword.keyword)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
             }
