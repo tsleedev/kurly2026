@@ -144,4 +144,66 @@ public struct SearchView: View {
         )
     }
 }
+
+#if DEBUG
+#Preview("최근 검색 - 빈") {
+    NavigationStack {
+        SearchView(
+            viewModel: SearchViewModel(
+                recentKeywordUseCase: StubRecentKeywordUseCase([]),
+                autoCompleteUseCase: StubAutoCompleteUseCase([]),
+                makeSearchResultViewModel: { _ in fatalError("Preview에선 .results 진입 안 함") }
+            ),
+            imageLoader: StubImageLoader()
+        )
+    }
+}
+
+#Preview("최근 검색 - 데이터 있음") {
+    NavigationStack {
+        SearchView(
+            viewModel: SearchViewModel(
+                recentKeywordUseCase: StubRecentKeywordUseCase(PreviewFixture.recentKeywords),
+                autoCompleteUseCase: StubAutoCompleteUseCase([]),
+                makeSearchResultViewModel: { _ in fatalError("Preview에선 .results 진입 안 함") }
+            ),
+            imageLoader: StubImageLoader()
+        )
+    }
+}
+
+#Preview("자동완성 - 결과 있음") {
+    let viewModel = SearchViewModel(
+        recentKeywordUseCase: StubRecentKeywordUseCase(PreviewFixture.recentKeywords),
+        autoCompleteUseCase: StubAutoCompleteUseCase(PreviewFixture.recentKeywords),
+        makeSearchResultViewModel: { _ in fatalError("Preview에선 .results 진입 안 함") },
+        clock: ContinuousClock(),
+        debounceDuration: .zero
+    )
+    return NavigationStack {
+        SearchView(viewModel: viewModel, imageLoader: StubImageLoader())
+            .onAppear {
+                viewModel.query = "swi"
+                viewModel.onQueryChanged("swi")
+            }
+    }
+}
+
+#Preview("자동완성 - 결과 없음") {
+    let viewModel = SearchViewModel(
+        recentKeywordUseCase: StubRecentKeywordUseCase(PreviewFixture.recentKeywords),
+        autoCompleteUseCase: StubAutoCompleteUseCase([]),
+        makeSearchResultViewModel: { _ in fatalError("Preview에선 .results 진입 안 함") },
+        clock: ContinuousClock(),
+        debounceDuration: .zero
+    )
+    return NavigationStack {
+        SearchView(viewModel: viewModel, imageLoader: StubImageLoader())
+            .onAppear {
+                viewModel.query = "kot"
+                viewModel.onQueryChanged("kot")
+            }
+    }
+}
+#endif
 #endif
