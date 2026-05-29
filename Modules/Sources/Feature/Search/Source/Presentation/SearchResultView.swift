@@ -65,8 +65,11 @@ public struct SearchResultView: View {
                             )
                         }
                         .buttonStyle(.borderless)
-                        .task(id: repository.id) {
-                            await viewModel.loadNextPageIfNeeded(currentItem: repository)
+                        .onAppear {
+                            // `.task(id:)`는 셀이 스크롤 밖으로 나가면 cancel되어 진행 중인 페이지 로드를 끊는다.
+                            // 무한 스크롤에서는 사용자가 계속 스크롤하므로 cancel이 일상적 — unstructured Task로
+                            // 셀 라이프사이클과 분리한다. 늦은 결과는 ViewModel의 generation 가드가 처리.
+                            Task { await viewModel.loadNextPageIfNeeded(currentItem: repository) }
                         }
                     }
                 } header: {
@@ -74,8 +77,10 @@ public struct SearchResultView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
-                Section {
-                    paginationFooter
+                if viewModel.paginationState != .idle {
+                    Section {
+                        paginationFooter
+                    }
                 }
             }
             .listStyle(.plain)
