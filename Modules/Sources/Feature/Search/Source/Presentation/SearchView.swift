@@ -180,8 +180,6 @@ public struct SearchView: View {
         clock: ContinuousClock(),
         debounceDuration: .zero
     )
-    // `#Preview` body 는 @ViewBuilder closure 라 explicit `return` 불가.
-    // `let` declaration + 마지막 view expression 만 두면 ViewBuilder 가 자동 반환한다.
     NavigationStack {
         SearchView(viewModel: viewModel, imageLoader: StubImageLoader())
             .onAppear {
