@@ -1,20 +1,25 @@
 #if canImport(UIKit) && canImport(SwiftUI)
 import SwiftUI
 import UIKit
+import ImageLoadingInterface
 import SearchInterface
 
-/// 검색 진입 화면. 두 가지 상태(.recent / .autocomplete)를 ViewModel.state로부터 분기.
+/// 검색 진입 화면. ViewModel.state로부터 세 가지 화면을 분기:
+/// `.recent` 최근 검색 / `.autocomplete` 자동완성 / `.results` 검색 결과(같은 화면 내 nested).
 ///
-/// 자동완성 진입/이탈은 ViewModel의 onQueryChanged 디바운스로 처리되며,
-/// View는 상태 변화에 따라 섹션을 교체할 뿐 디바운스 타이밍을 알지 못한다.
+/// 결과는 별도 push가 아니라 본 View 내부에서 그려지므로 `.navigationTitle("Search")`와
+/// `.searchable`이 그대로 유지된다 — 예시 화면(`예시 2..png`)과 동일한 시각 효과
+/// (large title이 결과 스크롤에 따라 collapse, "취소" 버튼이 검색바 옆에 유지).
 public struct SearchView: View {
 
     public let viewModel: SearchViewModel
+    public let imageLoader: any ImageLoaderProtocol
     @State private var deleteTarget: RecentKeyword?
     @State private var showDeleteAllAlert = false
 
-    public init(viewModel: SearchViewModel) {
+    public init(viewModel: SearchViewModel, imageLoader: any ImageLoaderProtocol) {
         self.viewModel = viewModel
+        self.imageLoader = imageLoader
     }
 
     public var body: some View {
@@ -59,6 +64,8 @@ public struct SearchView: View {
             recentSection(items: items)
         case .autocomplete(let items):
             autoCompleteSection(items: items)
+        case .results(let resultViewModel):
+            SearchResultView(viewModel: resultViewModel, imageLoader: imageLoader)
         }
     }
 

@@ -82,9 +82,13 @@ final class SearchResultViewSnapshotTests: XCTestCase {
         return SearchResultViewModel(query: query, searchUseCase: useCase)
     }
 
+    /// 부모(SearchView)가 적용하는 `.navigationTitle("Search")`를 시뮬레이트.
+    /// SearchResultView 자체는 nav title을 설정하지 않으므로, 실제 production 화면과
+    /// 동일한 large-title 레이아웃에서 결과 렌더를 검증한다.
     private func hosted(_ viewModel: SearchResultViewModel) -> some View {
         NavigationStack {
             SearchResultView(viewModel: viewModel, imageLoader: MockImageLoader())
+                .navigationTitle("Search")
         }
     }
 

@@ -27,6 +27,7 @@
 - 중복된 Gemini workflow YAML 블록 발견 → 제거
 - AsyncSequence가 스택에 명시되었지만 실코드 예시에 없음 → 정직하게 스택에서 제거
 - debounce 테스트 가능성을 위해 `Clock` 주입 도입
+- 모든 화면 구현 완료 후 사용자가 **예시 이미지를 다시 보여주며 "검색 결과가 push가 아닌 것 같다"** 라고 지적 → Claude가 (a) large title 유지 + 취소 버튼 + 스크롤 시 collapse가 모두 iOS `.searchable`의 기본 동작임을 확인 (b) 영향 범위(AppRouter / AppRootView / SearchView / SearchViewModel / SearchResultView + 스냅샷 4장 + 문서 3건) 추적 → same-screen state 전환으로 리팩터링 (PR `refactor/search-result-inline-state`)
 
 ### 3. 코딩 정책 수립 — Claude Code
 

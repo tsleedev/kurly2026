@@ -2,6 +2,7 @@
 import XCTest
 import SnapshotTesting
 import SwiftUI
+import ImageLoadingTesting
 import SearchInterface
 import SearchTesting
 @testable import Search
@@ -93,6 +94,11 @@ final class SearchViewSnapshotTests: XCTestCase {
         let viewModel = SearchViewModel(
             recentKeywordUseCase: recent,
             autoCompleteUseCase: autoComplete,
+            // .recent / .autocomplete 스냅샷은 결과 화면 진입 경로가 없어 factory가 호출되지 않는다.
+            // .results 상태 스냅샷은 SearchResultViewSnapshotTests가 별도로 커버.
+            makeSearchResultViewModel: { _ in
+                fatalError("이 스냅샷은 .results 상태를 사용하지 않음")
+            },
             clock: clock
         )
         return (viewModel, clock)
@@ -100,7 +106,7 @@ final class SearchViewSnapshotTests: XCTestCase {
 
     private func hosted(_ viewModel: SearchViewModel) -> some View {
         NavigationStack {
-            SearchView(viewModel: viewModel)
+            SearchView(viewModel: viewModel, imageLoader: MockImageLoader())
         }
     }
 

@@ -6,6 +6,10 @@ import NetworkInterface
 import SearchInterface
 
 /// 검색 결과 화면. 무한 스크롤로 페이지 누적.
+///
+/// SearchView 내부에 nested로 렌더되므로 자체적으로 navigation title을 설정하지 않는다.
+/// 부모(SearchView)의 `.navigationTitle("Search")` + `.searchable`이 그대로 유지되어
+/// large title이 결과 스크롤에 따라 collapse되는 동작을 자연스럽게 얻는다.
 public struct SearchResultView: View {
 
     public let viewModel: SearchResultViewModel
@@ -21,8 +25,6 @@ public struct SearchResultView: View {
 
     public var body: some View {
         content
-            .navigationTitle(viewModel.query)
-            .navigationBarTitleDisplayMode(.inline)
             .task {
                 await viewModel.onAppear()
             }

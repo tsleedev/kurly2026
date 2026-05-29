@@ -127,7 +127,7 @@ KurlyGitHubSearch/                       ← Git Repo Root
 │           │   │   │   ├── SearchResult.swift
 │           │   │   │   └── RecentKeyword.swift
 │           │   │   ├── Destinations/
-│           │   │   │   └── SearchResultDestination.swift   (struct: query — AppRouter가 사용)
+│           │   │   │   └── SearchResultDestination.swift   (struct: query — SearchResultViewModel 생성 파라미터)
 │           │   │   └── Repositories/
 │           │   │       ├── GitHubRepositoryProtocol.swift
 │           │   │       └── RecentKeywordRepositoryProtocol.swift
@@ -297,8 +297,9 @@ public protocol AutoCompleteUseCase: Sendable {
     func suggestions(for prefix: String) async -> [RecentKeyword]
 }
 
-// Destinations — AppRouter가 navigationDestination 분기에 사용.
-// Feature의 화면 파라미터를 한 곳에 모아 Router 시그니처를 안정화한다.
+// SearchResultViewModel 생성에 필요한 파라미터 묶음. 결과는 push가 아니라 SearchView 내부 state로
+// 표시되지만, Composition Root(AppDIContainer) ↔ Search 모듈 사이 시그니처를 안정화하기 위해
+// Interface에 남긴다(파라미터가 늘어도 본 struct만 확장).
 public struct SearchResultDestination: Hashable {
     public let query: String
     public init(query: String) { self.query = query }
@@ -326,60 +327,68 @@ import Observation
 @Observable
 @MainActor
 final class SearchViewModel {
-    enum State: Equatable {
+    enum State {
         case recent([RecentKeyword])
         case autocomplete([RecentKeyword])
+        case results(SearchResultViewModel)   // nested @Observable — 같은 화면에서 결과 표시
     }
     
     private(set) var state: State = .recent([])
     var query: String = ""    // SwiftUI .searchable 양방향 바인딩
     
-    // Router 위임 (closure)
-    var onRequestSearch: ((String) -> Void)?
-    var onRequestWebView: ((Repository) -> Void)?
-    
     private let recentKeywordUseCase: RecentKeywordUseCase
     private let autoCompleteUseCase: AutoCompleteUseCase
-    private let clock: any Clock<Duration>          // 테스트 시 TestClock 주입
+    /// 결과 VM은 SearchRepositoriesUseCase 의존성이 있어 SearchViewModel이 직접 만들지 않는다.
+    /// Composition Root(AppDIContainer)가 factory closure를 주입.
+    private let makeSearchResultViewModel: @MainActor (SearchResultDestination) -> SearchResultViewModel
+    private let clock: any Clock<Duration>
     @ObservationIgnored private var debounceTask: Task<Void, Never>?
     
     init(recentKeywordUseCase: RecentKeywordUseCase,
          autoCompleteUseCase: AutoCompleteUseCase,
+         makeSearchResultViewModel: @escaping @MainActor (SearchResultDestination) -> SearchResultViewModel,
          clock: any Clock<Duration> = ContinuousClock()) { ... }
     
-    func onAppear() { state = .recent(recentKeywordUseCase.recent()) }
-    
     func onQueryChanged(_ newValue: String) {
+        // newValue == "" 분기는 debounce 없이 .recent로 즉시 복귀
+        // (.searchable 취소 버튼이 query=""를 set하므로 결과 화면 → 최근 검색 복귀가 자연스러움)
         debounceTask?.cancel()
         debounceTask = Task { @MainActor [weak self] in
             guard let self else { return }
-            try? await self.clock.sleep(for: .milliseconds(300))
+            if !newValue.isEmpty {
+                try? await self.clock.sleep(for: .milliseconds(300))
+            }
             guard !Task.isCancelled else { return }
             self.state = newValue.isEmpty
-                ? .recent(self.recentKeywordUseCase.recent())
-                : .autocomplete(self.autoCompleteUseCase.suggestions(for: newValue))
+                ? .recent(await self.recentKeywordUseCase.recent())
+                : .autocomplete(await self.autoCompleteUseCase.suggestions(for: newValue))
         }
     }
     
-    func onSubmit() {
-        guard !query.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-        recentKeywordUseCase.save(query)
-        onRequestSearch?(query)
+    func onSubmit() async {
+        let trimmed = query.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        query = trimmed
+        // state는 save 이전에 동기적으로 설정해 사용자가 결과 화면을 즉시 본다.
+        // save가 await인 동안 사용자가 다시 입력해도 onQueryChanged가 새 debounce를 스케줄해 자연스럽게 화면이 전환되므로
+        // save 결과를 기다리느라 submit이 묵음 실패하는 경로가 없다.
+        state = .results(makeSearchResultViewModel(.init(query: trimmed)))
+        await recentKeywordUseCase.save(trimmed)
     }
     
-    func onTapRecent(_ keyword: String) {
+    func onTapRecent(_ keyword: String) async {
         query = keyword
-        recentKeywordUseCase.save(keyword)
-        onRequestSearch?(keyword)
+        state = .results(makeSearchResultViewModel(.init(query: keyword)))
+        await recentKeywordUseCase.save(keyword)
     }
     
-    func onConfirmDelete(_ keyword: String) {
-        recentKeywordUseCase.delete(keyword)
-        state = .recent(recentKeywordUseCase.recent())
+    func onConfirmDelete(_ keyword: String) async {
+        await recentKeywordUseCase.delete(keyword)
+        state = .recent(await recentKeywordUseCase.recent())
     }
     
-    func onConfirmDeleteAll() {
-        recentKeywordUseCase.deleteAll()
+    func onConfirmDeleteAll() async {
+        await recentKeywordUseCase.deleteAll()
         state = .recent([])
     }
 }
@@ -390,22 +399,18 @@ final class SearchViewModel {
 ```swift
 // App/AppRouter.swift
 //
-// Destination은 각 Feature의 Interface에서 정의한 struct를 그대로 들고 다닌다.
-// 이렇게 하면 화면별 파라미터가 늘어나도 AppRouter 시그니처가 바뀌지 않고,
-// "WebViewDestination" 같은 타입이 실제로 의미를 가진다.
+// 검색 결과는 SearchView 내부 state로 표시되므로 AppRouter는 WebView push만 담당한다.
+// Destination enum이 더 적어도 패턴 일관성이 깨지지는 않는다 — 추후 다른 push 화면이 추가되면
+// 같은 형태로 case를 늘리면 됨.
 @Observable
 @MainActor
 final class AppRouter {
     enum Destination: Hashable {
-        case searchResult(SearchResultDestination)
         case webView(WebViewDestination)
     }
     
     var path: [Destination] = []
     
-    func showSearchResult(_ destination: SearchResultDestination) {
-        path.append(.searchResult(destination))
-    }
     func showWebView(_ destination: WebViewDestination) {
         path.append(.webView(destination))
     }
@@ -415,25 +420,14 @@ final class AppRouter {
 
 // App/AppRootView.swift
 struct AppRootView: View {
-    @State private var router: AppRouter
     let container: AppDIContainer
     
-    init(container: AppDIContainer) {
-        self.container = container
-        self._router = State(initialValue: AppRouter())
-    }
-    
     var body: some View {
+        @Bindable var router = container.router
         NavigationStack(path: $router.path) {
-            SearchView(viewModel: container.makeSearchViewModel(router: router))
+            SearchView(viewModel: container.searchViewModel, imageLoader: container.makeImageLoader())
                 .navigationDestination(for: AppRouter.Destination.self) { dest in
                     switch dest {
-                    case .searchResult(let destination):
-                        SearchResultView(
-                            viewModel: container.makeSearchResultViewModel(
-                                destination: destination, router: router
-                            )
-                        )
                     case .webView(let destination):
                         RepositoryWebView(destination: destination)
                     }
@@ -442,15 +436,21 @@ struct AppRootView: View {
     }
 }
 
-// AppDIContainer가 ViewModel 만들면서 Router를 closure로 주입
+// AppDIContainer가 SearchViewModel 만들면서 결과 VM factory closure를 주입.
+// SearchViewModel은 SearchRepositoriesUseCase 의존성을 알 필요가 없다.
 extension AppDIContainer {
-    func makeSearchViewModel(router: AppRouter) -> SearchViewModel {
-        let vm = SearchViewModel(
-            recentKeywordUseCase: ...,
-            autoCompleteUseCase: ...
-        )
-        vm.onRequestSearch = { [weak router] query in
-            router?.showSearchResult(.init(query: query))
+    private(set) lazy var searchViewModel: SearchViewModel = SearchViewModel(
+        recentKeywordUseCase: ...,
+        autoCompleteUseCase: ...,
+        makeSearchResultViewModel: { [unowned self] destination in
+            self.makeSearchResultViewModel(destination: destination)
+        }
+    )
+    
+    private func makeSearchResultViewModel(destination: SearchResultDestination) -> SearchResultViewModel {
+        let vm = SearchResultViewModel(query: destination.query, searchUseCase: ...)
+        vm.onRequestWebView = { [router] repo in
+            router.showWebView(WebViewDestination(url: repo.htmlURL, title: repo.name))
         }
         return vm
     }
@@ -569,10 +569,10 @@ public struct CachedAsyncImage<Content: View, Placeholder: View>: View {
 - 최근 검색어 X 탭 → `.alert` (삭제 확인)
 - 전체삭제 → `.alert` (전체 삭제 확인)
 
-### 2) SearchResultView (검색 결과 화면)
+### 2) SearchResultView (검색 결과 — SearchView 내부 nested)
 **레퍼런스**: `과제/예시 2..png`
 
-- `.navigationTitle(query)`로 표시 (결과 화면에서 `.searchable`은 사용하지 않음 — 재검색은 백 후 검색 화면에서)
+- **별도 push 화면이 아니라 SearchView 내부에서 `.results` state로 렌더**. 부모(SearchView)의 `.navigationTitle("Search")` + `.searchable`이 유지되어 large title이 결과 스크롤에 따라 collapse되는 예시 화면 동작을 그대로 얻는다. 취소 버튼 탭(→ query="") 시 `.recent`로 자연스럽게 복귀
 - "266,714개 저장소" 형태 총 개수 헤더
 - `List` + `RepositoryRow`
   - 좌측: `CachedAsyncImage` 썸네일 (40~48pt clip to circle)
@@ -607,23 +607,23 @@ state = .autocomplete([...])
 [SwiftUI] @Observable 자동 추적으로 List 갱신
 ```
 
-### B. 검색 실행 → 결과 화면
+### B. 검색 실행 → 결과 화면 (same-screen state 전환)
 ```
 [.onSubmit(of: .search) / 최근 chip 탭 / 자동완성 탭]
    ▼
-viewModel.onSubmit() or onTapRecent / onTapAutoComplete
+viewModel.onSubmit() or onTapRecent
    │ ① RecentKeywordUseCase.save("Swift")
-   │ ② onRequestSearch?("Swift")
+   │ ② resultVM = makeSearchResultViewModel(.init(query: "Swift"))
+   │ ③ state = .results(resultVM)
    ▼
-AppRouter.showSearchResult(query: "Swift")
-   │ path.append(.searchResult(query: "Swift"))
+SearchView가 .results 분기로 SearchResultView를 nested 렌더 (NavigationStack push 없음)
    ▼
-NavigationStack이 자동으로 navigationDestination 매칭
-   ▼
-SearchResultView 렌더 + viewModel.loadFirstPage()
+SearchResultView.task → resultVM.onAppear() → loadFirstPage()
    │ SearchRepositoriesUseCase.execute(query, page: 1)
    ▼
 items = [30개]; totalCount = 266714; hasNextPage = true
+
+[취소/지움 시 query="" → onQueryChanged("") → state = .recent(...) 자연스럽게 복귀]
 ```
 
 ### C. 무한 스크롤
@@ -698,7 +698,7 @@ Response 매핑:
 - `SearchViewModelTests`: Mock UseCase 주입, 상태 전환
 - **debounce 테스트**: `TestClock`(직접 구현, 외부 라이브러리 0 정책) 주입 → 가상 시간 advance로 결정론적 테스트
 - `SearchResultViewModelTests`: 무한 스크롤 진입 조건, 페이지 누적, 종결
-- Router 연결: `vm.onRequestSearch = { received.append($0) }` 검증
+- 결과 화면 전환: `makeSearchResultViewModel` factory closure에 stub을 주입해 `sut.state == .results(stubVM)` 검증 (`onRequestSearch` 같은 push 전용 closure는 더 이상 없음)
 
 ### Snapshot 테스트 (SearchTests/Snapshot/)
 - `SearchViewSnapshotTests`: 최근 0개 / N개 / 자동완성 상태
@@ -817,6 +817,7 @@ jobs:
 | 16 | `feat/app-router-di` | AppDIContainer + AppRouter + AppRootView + NavigationStack 조립 (모든 화면 연결) | 11, 13, 15 |
 | 17 | `chore/snapshot-tests` | SearchView / SearchResultView Snapshot 테스트 (record → commit) | 16 |
 | 18 | `chore/readme-final` | README 최종 정리: 아키텍처 다이어그램, CI 배지, AI 활용 내역, 스크린샷. (각 PR이 자기 변경분은 README에 점진 반영하되, 이 PR에서 전체 톤/구조를 마무리) | 17 |
+| 19 | `refactor/search-result-inline-state` | 검색 결과를 push 화면이 아닌 SearchView 내부 `.results` state로 전환. AppRouter `.searchResult` case 제거. SearchResultDestination은 결과 VM factory 파라미터로 재사용. 문서 동기화 + 결과 스냅샷 re-record. | 16 |
 
 > 의존성이 있는 PR은 의존 PR이 머지된 후 작업 시작. 병렬 가능한 PR(3, 4, 5)은 동시 진행 가능.
 
@@ -1012,3 +1013,4 @@ SwiftUI + Modular Clean Architecture + microfeatures.
 | #8 | `chore/network-polish` | URLSessionAPIClient `@unchecked Sendable` + URLProtocolStub URL별 핸들러 |
 | #9 | `feat/search-domain` | Search 도메인 레이어 도입 (SearchInterface, UseCase Impl, Mock 5종, Tests) |
 | (본 PR) | `refactor/async-actor-migration` | protocol async 통일 + actor 마이그레이션 + 문서 정리. PR #9 Gemini 리뷰 지적(Mock data race)의 근본 원인인 sync protocol 패턴을 제거하고 Storage·Search 전 영역을 async/actor로 통일. |
+| (본 PR) | `refactor/search-result-inline-state` | 예시 화면 재분석 결과 검색 결과가 별도 push가 아닌 same-screen state임을 확인. SearchViewModel.State에 `.results(SearchResultViewModel)` 추가, AppRouter `.searchResult` 제거, SearchResultView의 navigationTitle 제거(부모 "Search"로 통합), 결과 스냅샷 re-record. |
