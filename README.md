@@ -105,7 +105,7 @@ xcodebuild build \
 | 잡 | 명령 | 검증 범위 |
 |---|---|---|
 | SwiftPM (macOS) | `cd Modules && swift test --parallel` | Domain, Data, ViewModel (UIKit 비의존) |
-| Xcode iOS | `xcodebuild test -scheme Modules-Package -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' -only-testing:ImageLoadingTests -only-testing:SearchTests/SearchViewSnapshotTests -only-testing:SearchTests/SearchResultViewSnapshotTests` | ImageLoading + SwiftUI 스냅샷 (iOS only) |
+| Xcode iOS | `cd Modules && xcodebuild test -scheme Modules-Package -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' -only-testing:ImageLoadingTests -only-testing:SearchTests/SearchViewSnapshotTests -only-testing:SearchTests/SearchResultViewSnapshotTests` | ImageLoading + SwiftUI 스냅샷 (iOS only) |
 | Lint | `swiftlint --strict` | 코드 스타일 |
 
 테스트 작성 가이드는 [docs/testing.md](docs/testing.md) 참고.
