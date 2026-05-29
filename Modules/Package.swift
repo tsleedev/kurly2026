@@ -74,16 +74,10 @@ let package = Package(
             dependencies: ["WebViewInterface"],
             path: "Sources/Feature/WebView/Source"
         ),
-        .target(
-            name: "WebViewTesting",
-            dependencies: ["WebViewInterface"],
-            path: "Sources/Feature/WebView/Testing"
-        ),
         .testTarget(
             name: "WebViewTests",
             dependencies: [
                 "WebView",
-                "WebViewTesting",
                 .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
             ],
             path: "Sources/Feature/WebView/Tests"
