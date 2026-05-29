@@ -46,14 +46,17 @@ jobs:
         run: swift test --parallel
 
       - name: Xcode Test (UIKit modules — iOS Simulator)
-        # UIKit 의존 모듈(ImageLoading 등)은 swift test 가 macOS 로 컴파일돼 UIKit 없음.
-        # Modules 디렉토리의 Modules-Package 자동 scheme 으로 iOS Simulator 에서 직접 실행.
+        # UIKit 의존 모듈(ImageLoading, SearchView/SearchResultView 스냅샷)은
+        # swift test 가 macOS 로 컴파일돼 UIKit 없음. iOS Simulator 에서 실행한다.
+        # SearchTests는 macOS-safe 부분도 포함하지만 중복 실행은 swift test 가 이미 해줌 — 여기선 UIKit 의존 부분만 추가 검증.
         working-directory: Modules
         run: |
           xcodebuild test \
             -scheme "Modules-Package" \
             -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
-            -only-testing:ImageLoadingTests
+            -only-testing:ImageLoadingTests \
+            -only-testing:SearchTests/SearchViewSnapshotTests \
+            -only-testing:SearchTests/SearchResultViewSnapshotTests
 
       - name: Xcode Build (App)
         # App에 자체 test target이 없어 xcodebuild test는 사용 불가.

@@ -47,6 +47,9 @@ public final class SearchResultViewModel {
 
     private let searchUseCase: SearchRepositoriesUseCase
     @ObservationIgnored private var generation: UInt64 = 0
+    /// 첫 onAppear에서 1회만 로드. .task가 view 재진입 등으로 다시 발화해도 자동 재요청하지 않는다.
+    /// 명시적 재시도는 `onRetry()` 사용 (사용자가 다시 시도 버튼 탭).
+    @ObservationIgnored private var hasInitiated = false
 
     // MARK: - Init
 
@@ -63,8 +66,8 @@ public final class SearchResultViewModel {
     // MARK: - Lifecycle
 
     public func onAppear() async {
-        // 첫 진입 또는 .task 재실행: 이미 .loaded 상태면 다시 로드하지 않는다.
-        if case .loaded = state { return }
+        guard !hasInitiated else { return }
+        hasInitiated = true
         await load()
     }
 

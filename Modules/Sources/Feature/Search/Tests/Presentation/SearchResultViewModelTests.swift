@@ -77,6 +77,19 @@ final class SearchResultViewModelTests: XCTestCase {
         XCTAssertEqual(captured.count, 1)
     }
 
+    func test_onAppear_failed_상태면_자동_재호출되지_않는다() async {
+        let mock = MockSearchRepositoriesUseCase(stub: .failure(NetworkError.transport))
+        let sut = SearchResultViewModel(query: "swift", searchUseCase: mock)
+        await sut.onAppear()
+        XCTAssertEqual(sut.state, .failed(.transport))
+
+        // .task 재발화 등으로 onAppear가 다시 호출돼도 자동 재시도하지 않음 — 명시적 onRetry로만
+        await sut.onAppear()
+
+        let captured = await mock.capturedExecutions
+        XCTAssertEqual(captured.count, 1)
+    }
+
     // MARK: - onRetry
 
     func test_onRetry_state가_loading으로_초기화된_후_재요청된다() async {
