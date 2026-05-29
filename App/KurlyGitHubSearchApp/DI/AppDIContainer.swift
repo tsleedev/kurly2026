@@ -16,7 +16,7 @@ import WebViewInterface
 ///
 /// **App 수명과 같은 객체(`router`, `searchViewModel`)는 Container가 직접 소유**한다 — AppRootView가
 /// 매 init마다 만들어 @State로 넘기는 패턴 대비 객체 생성/폐기 비용 0.
-/// destination별로 다른 SearchResultViewModel만 factory 메서드로 제공.
+/// 결과 화면 진입 시마다 새로 만들어지는 SearchResultViewModel만 factory 메서드로 제공.
 ///
 /// `@MainActor`로 두는 이유: 비isolated `lazy var`는 thread-safe하지 않다(Swift는 lazy stored property에
 /// 동기화를 보장하지 않음). 그래프 조립은 항상 main에서 수행되므로 isolation을 명시해 race를 차단한다.
@@ -43,16 +43,18 @@ final class AppDIContainer {
     private lazy var autoCompleteUseCase: AutoCompleteUseCase = AutoCompleteUseCaseImpl(repository: recentKeywordRepository)
 
     /// 검색 진입 화면 VM은 앱 수명과 같으므로 Container가 직접 소유 (lazy).
-    private(set) lazy var searchViewModel: SearchViewModel = {
-        let viewModel = SearchViewModel(
-            recentKeywordUseCase: recentKeywordUseCase,
-            autoCompleteUseCase: autoCompleteUseCase
-        )
-        viewModel.onRequestSearch = { [router] query in
-            router.showSearchResult(SearchResultDestination(query: query))
+    /// 결과 VM은 submit/탭마다 새로 만들어지므로 factory closure를 주입 — SearchViewModel은
+    /// `SearchRepositoriesUseCase` 의존성을 알 필요가 없다.
+    ///
+    /// `[unowned self]`: Container는 App entry point가 소유해 SearchViewModel(자식)보다 오래 산다.
+    /// strong 캡쳐는 container → searchViewModel → closure → container 순환을 만든다.
+    private(set) lazy var searchViewModel: SearchViewModel = SearchViewModel(
+        recentKeywordUseCase: recentKeywordUseCase,
+        autoCompleteUseCase: autoCompleteUseCase,
+        makeSearchResultViewModel: { [unowned self] destination in
+            self.makeSearchResultViewModel(destination: destination)
         }
-        return viewModel
-    }()
+    )
 
     // MARK: - Init
 
@@ -75,8 +77,8 @@ final class AppDIContainer {
 
     // MARK: - ViewModel factories
 
-    /// destination별로 다른 ViewModel이므로 factory 유지. 호출 측이 @State로 보존.
-    func makeSearchResultViewModel(
+    /// destination별로 다른 ViewModel이므로 factory 유지. SearchViewModel이 closure로 호출.
+    private func makeSearchResultViewModel(
         destination: SearchResultDestination
     ) -> SearchResultViewModel {
         let viewModel = SearchResultViewModel(

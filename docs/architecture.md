@@ -39,7 +39,7 @@ kurly2026/
 
 ```
 App
- ├── AppRouter (Destination = SearchResultDestination | WebViewDestination)
+ ├── AppRouter (Destination = WebViewDestination)
  ├── SearchInterface,        Search
  ├── WebViewInterface,       WebView
  ├── NetworkInterface,       Network
@@ -110,9 +110,9 @@ WebView  ──► WebViewInterface
 
 - `AppRouter`(`@Observable`, `@MainActor`)가 `NavigationStack`의 path를 보유
 - `Destination` enum의 각 case는 Feature Interface의 `*Destination` struct를 직접 보유
-  - `case searchResult(SearchResultDestination)`
   - `case webView(WebViewDestination)`
-- ViewModel은 `onRequestSearch: ((String) -> Void)?` 같은 closure로 Router와 분리됨
-- DI Container가 ViewModel 만들면서 Router를 closure로 주입
+- 검색 결과는 별도 push가 아니라 `SearchViewModel.State.results(SearchResultViewModel)` 로 SearchView 내부에서 렌더 — `AppRouter.path`에 추가되지 않는다 (예시 화면이 large title을 유지하면서 결과를 보여주는 동작과 일치)
+- ViewModel은 `onRequestWebView: ((Repository) -> Void)?` 같은 closure로 Router와 분리됨 (WebView push만 Router 경유)
+- DI Container가 ViewModel 만들면서 Router를 closure로 주입. 결과 화면처럼 화면 안에서 동적으로 만들어지는 sub-VM은 factory closure(`makeSearchResultViewModel`)로 주입
 
 자세한 코드 예시는 [plan.md `### Router 패턴`](plan.md) 참조.

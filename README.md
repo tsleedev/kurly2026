@@ -16,7 +16,7 @@
 
 ## 핵심 기능
 
-- **검색**: `.searchable` + 키보드 submit → 결과 화면 push
+- **검색**: `.searchable` + 키보드 submit → 같은 화면에서 `.results` state로 전환 (large title은 그대로 유지)
 - **자동완성**: 최근 검색어 prefix 매칭, `Clock` 주입 + 300ms debounce (테스트는 `TestClock`으로 결정론적)
 - **최근 검색**: 개별 삭제 / 전체 삭제(확인 Alert), UserDefaults + JSON 영속화
 - **검색 결과**: 총 개수 헤더 + List + 원형 avatar 썸네일(`CachedAsyncImage` + NSCache)
