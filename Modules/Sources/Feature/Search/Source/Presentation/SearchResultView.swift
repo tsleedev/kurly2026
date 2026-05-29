@@ -5,7 +5,7 @@ import ImageLoadingInterface
 import NetworkInterface
 import SearchInterface
 
-/// 검색 결과 화면. 본 PR은 page=1만 보여준다.
+/// 검색 결과 화면. 무한 스크롤로 페이지 누적.
 public struct SearchResultView: View {
 
     public let viewModel: SearchResultViewModel
@@ -65,14 +65,57 @@ public struct SearchResultView: View {
                             )
                         }
                         .buttonStyle(.borderless)
+                        .onAppear {
+                            // `.task(id:)`는 셀이 스크롤 밖으로 나가면 cancel되어 진행 중인 페이지 로드를 끊는다.
+                            // 무한 스크롤에서는 사용자가 계속 스크롤하므로 cancel이 일상적 — unstructured Task로
+                            // 셀 라이프사이클과 분리한다. 늦은 결과는 ViewModel의 generation 가드가 처리.
+                            Task { await viewModel.loadNextPageIfNeeded(currentItem: repository) }
+                        }
                     }
                 } header: {
                     Text("\(formatted(result.totalCount))개 저장소")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
+                if viewModel.paginationState != .idle {
+                    Section {
+                        paginationFooter
+                    }
+                }
             }
             .listStyle(.plain)
+        }
+    }
+
+    @ViewBuilder
+    private var paginationFooter: some View {
+        switch viewModel.paginationState {
+        case .idle:
+            EmptyView()
+        case .loading:
+            HStack {
+                Spacer()
+                ProgressView()
+                    .padding(.vertical, 12)
+                Spacer()
+            }
+            .listRowSeparator(.hidden)
+        case .failed(let error):
+            VStack(spacing: 8) {
+                Text("다음 페이지를 불러오지 못했어요")
+                    .font(.subheadline)
+                Text(message(for: error))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                Button("다시 시도") {
+                    Task { await viewModel.retryNextPage() }
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .listRowSeparator(.hidden)
         }
     }
 
