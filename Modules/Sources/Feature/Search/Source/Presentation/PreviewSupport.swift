@@ -116,4 +116,17 @@ enum PreviewFixture {
         URL(string: string) ?? URL(fileURLWithPath: "/")
     }
 }
+
+// MARK: - Preview helpers
+
+/// SearchView Preview 에서 .results state 진입 시 SearchResultViewModel 을 즉석 생성한다.
+/// Live Preview / Interactive Preview 모드에서 검색어 탭 또는 submit 으로 결과 화면이 열릴 때
+/// crash 없이 stub 결과를 표시하기 위한 factory (이전 `fatalError` 대체).
+@MainActor
+func previewMakeSearchResultViewModel(_ destination: SearchResultDestination) -> SearchResultViewModel {
+    SearchResultViewModel(
+        query: destination.query,
+        searchUseCase: StubSearchRepositoriesUseCase(.success(PreviewFixture.searchResult))
+    )
+}
 #endif

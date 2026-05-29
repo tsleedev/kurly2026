@@ -152,7 +152,7 @@ public struct SearchView: View {
             viewModel: SearchViewModel(
                 recentKeywordUseCase: StubRecentKeywordUseCase([]),
                 autoCompleteUseCase: StubAutoCompleteUseCase([]),
-                makeSearchResultViewModel: { _ in fatalError("Preview에선 .results 진입 안 함") }
+                makeSearchResultViewModel: previewMakeSearchResultViewModel
             ),
             imageLoader: StubImageLoader()
         )
@@ -165,7 +165,7 @@ public struct SearchView: View {
             viewModel: SearchViewModel(
                 recentKeywordUseCase: StubRecentKeywordUseCase(PreviewFixture.recentKeywords),
                 autoCompleteUseCase: StubAutoCompleteUseCase([]),
-                makeSearchResultViewModel: { _ in fatalError("Preview에선 .results 진입 안 함") }
+                makeSearchResultViewModel: previewMakeSearchResultViewModel
             ),
             imageLoader: StubImageLoader()
         )
@@ -176,7 +176,7 @@ public struct SearchView: View {
     let viewModel = SearchViewModel(
         recentKeywordUseCase: StubRecentKeywordUseCase(PreviewFixture.recentKeywords),
         autoCompleteUseCase: StubAutoCompleteUseCase(PreviewFixture.recentKeywords),
-        makeSearchResultViewModel: { _ in fatalError("Preview에선 .results 진입 안 함") },
+        makeSearchResultViewModel: previewMakeSearchResultViewModel,
         clock: ContinuousClock(),
         debounceDuration: .zero
     )
@@ -193,7 +193,7 @@ public struct SearchView: View {
     let viewModel = SearchViewModel(
         recentKeywordUseCase: StubRecentKeywordUseCase(PreviewFixture.recentKeywords),
         autoCompleteUseCase: StubAutoCompleteUseCase([]),
-        makeSearchResultViewModel: { _ in fatalError("Preview에선 .results 진입 안 함") },
+        makeSearchResultViewModel: previewMakeSearchResultViewModel,
         clock: ContinuousClock(),
         debounceDuration: .zero
     )
