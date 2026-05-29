@@ -7,7 +7,12 @@ import NetworkInterface
 /// Network 모듈은 transport(HTTP)만 알고 GitHub 도메인은 모르도록 책임을 분리한다.
 enum GitHubSearchEndpoint {
 
-    private static let baseURL = URL(string: "https://api.github.com")!
+    private static let baseURL: URL = {
+        guard let url = URL(string: "https://api.github.com") else {
+            preconditionFailure("Invalid GitHub baseURL literal")
+        }
+        return url
+    }()
 
     private static let defaultHeaders: [String: String] = [
         "Accept": "application/vnd.github+json",

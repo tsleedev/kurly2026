@@ -93,17 +93,15 @@ final class GitHubRepositoryTests: XCTestCase {
         }
     }
 
-    func test_search_매핑_실패는_decoding_에러로_던진다() async throws {
+    func test_search_매핑_실패한_아이템은_결과에서_제외된다() async throws {
         let client = MockAPIClient()
-        client.stub(result: Self.invalidURLDTO)
+        client.stub(result: Self.partiallyInvalidDTO)
         let sut = GitHubRepository(client: client)
 
-        do {
-            _ = try await sut.search(query: "swift", page: 1)
-            XCTFail("에러를 던져야 합니다")
-        } catch let error as NetworkError {
-            XCTAssertEqual(error, .decoding)
-        }
+        let result = try await sut.search(query: "swift", page: 1)
+
+        XCTAssertEqual(result.repositories.map(\.id), [1])
+        XCTAssertEqual(result.totalCount, 2)
     }
 
     // MARK: - Fixtures
@@ -132,16 +130,24 @@ final class GitHubRepositoryTests: XCTestCase {
         ]
     )
 
-    private static let invalidURLDTO = SearchResultDTO(
-        totalCount: 1,
+    private static let partiallyInvalidDTO = SearchResultDTO(
+        totalCount: 2,
         items: [
             RepositoryDTO(
                 id: 1,
-                name: "x",
-                fullName: "u/x",
+                name: "good",
+                fullName: "u/good",
+                owner: OwnerDTO(login: "u", avatarURL: "https://example.com/a.png"),
+                description: nil,
+                htmlURL: "https://github.com/u/good"
+            ),
+            RepositoryDTO(
+                id: 2,
+                name: "broken",
+                fullName: "u/broken",
                 owner: OwnerDTO(login: "u", avatarURL: ""),
                 description: nil,
-                htmlURL: "https://github.com/u/x"
+                htmlURL: "https://github.com/u/broken"
             ),
         ]
     )

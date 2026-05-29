@@ -22,6 +22,6 @@ public final class GitHubRepository: GitHubRepositoryProtocol {
             perPage: SearchResultMapper.perPage
         )
         let dto: SearchResultDTO = try await client.request(endpoint)
-        return try SearchResultMapper.map(dto, page: page)
+        return SearchResultMapper.map(dto, page: page)
     }
 }
