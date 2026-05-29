@@ -369,14 +369,17 @@ final class SearchViewModel {
         let trimmed = query.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
         query = trimmed
-        await recentKeywordUseCase.save(trimmed)
+        // state는 save 이전에 동기적으로 설정해 사용자가 결과 화면을 즉시 본다.
+        // save가 await인 동안 사용자가 다시 입력해도 onQueryChanged가 새 debounce를 스케줄해 자연스럽게 화면이 전환되므로
+        // save 결과를 기다리느라 submit이 묵음 실패하는 경로가 없다.
         state = .results(makeSearchResultViewModel(.init(query: trimmed)))
+        await recentKeywordUseCase.save(trimmed)
     }
     
     func onTapRecent(_ keyword: String) async {
         query = keyword
-        await recentKeywordUseCase.save(keyword)
         state = .results(makeSearchResultViewModel(.init(query: keyword)))
+        await recentKeywordUseCase.save(keyword)
     }
     
     func onConfirmDelete(_ keyword: String) async {
