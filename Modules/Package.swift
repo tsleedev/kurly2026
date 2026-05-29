@@ -36,6 +36,11 @@ let package = Package(
                 "NetworkInterface",
                 "StorageInterface",
                 "ImageLoadingInterface",
+                // CachedAsyncImage(공용 SwiftUI 컴포넌트) 사용. Source-to-Source 의존은
+                // architecture.md의 Interface-only 원칙에서 벗어나는 예외 — 공용 UI 컴포넌트의
+                // 중복 구현을 피하기 위한 의도적 선택. 향후 ImageLoadingComponents 같은
+                // 별도 UI 모듈로 분리 검토.
+                "ImageLoading",
             ],
             path: "Sources/Feature/Search/Source"
         ),

@@ -119,8 +119,8 @@ final class SearchResultViewModelTests: XCTestCase {
         hasNextPage: false
     )
 
-    private static let placeholderAvatar = URL(string: "https://example.com/a.png")!
-    private static let placeholderHTML = URL(string: "https://github.com/u/x")!
+    private static let placeholderAvatar = URL(string: "https://example.com/a.png") ?? URL(fileURLWithPath: "/")
+    private static let placeholderHTML = URL(string: "https://github.com/u/x") ?? URL(fileURLWithPath: "/")
 
     private static func sampleRepository(id: Int, name: String) -> Repository {
         Repository(

@@ -117,7 +117,7 @@ public struct SearchResultView: View {
     private static let numberFormatter: NumberFormatter = {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
-        formatter.groupingSeparator = ","
+        // groupingSeparator는 사용자 Locale을 따른다(한국 "," / 독일 "." / 프랑스 공백 등).
         return formatter
     }()
 }
