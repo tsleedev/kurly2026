@@ -180,7 +180,7 @@ public struct SearchView: View {
         clock: ContinuousClock(),
         debounceDuration: .zero
     )
-    return NavigationStack {
+    NavigationStack {
         SearchView(viewModel: viewModel, imageLoader: StubImageLoader())
             .onAppear {
                 viewModel.query = "swi"
@@ -197,7 +197,7 @@ public struct SearchView: View {
         clock: ContinuousClock(),
         debounceDuration: .zero
     )
-    return NavigationStack {
+    NavigationStack {
         SearchView(viewModel: viewModel, imageLoader: StubImageLoader())
             .onAppear {
                 viewModel.query = "kot"
