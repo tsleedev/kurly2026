@@ -3,9 +3,10 @@ import SwiftUI
 import UIKit
 import SearchInterface
 
-/// 검색 진입 화면. 최근 검색 키워드 리스트 + 검색 입력.
+/// 검색 진입 화면. 두 가지 상태(.recent / .autocomplete)를 ViewModel.state로부터 분기.
 ///
-/// 본 PR은 최근 검색만 다룬다. 자동완성 UI/디바운스는 후속 PR에서 도입.
+/// 자동완성 진입/이탈은 ViewModel의 onQueryChanged 디바운스로 처리되며,
+/// View는 상태 변화에 따라 섹션을 교체할 뿐 디바운스 타이밍을 알지 못한다.
 public struct SearchView: View {
 
     public let viewModel: SearchViewModel
@@ -17,10 +18,9 @@ public struct SearchView: View {
     }
 
     public var body: some View {
-        @Bindable var viewModel = viewModel
-        return contentList
+        contentList
             .navigationTitle("Search")
-            .searchable(text: $viewModel.query, prompt: "저장소 검색")
+            .searchable(text: queryBinding, prompt: "저장소 검색")
             .onSubmit(of: .search) {
                 Task { await viewModel.onSubmit() }
             }
@@ -54,7 +54,17 @@ public struct SearchView: View {
 
     @ViewBuilder
     private var contentList: some View {
-        if viewModel.recentKeywords.isEmpty {
+        switch viewModel.state {
+        case .recent(let items):
+            recentSection(items: items)
+        case .autocomplete(let items):
+            autoCompleteSection(items: items)
+        }
+    }
+
+    @ViewBuilder
+    private func recentSection(items: [RecentKeyword]) -> some View {
+        if items.isEmpty {
             ContentUnavailableView(
                 "최근 검색이 없어요",
                 systemImage: "magnifyingglass",
@@ -63,7 +73,7 @@ public struct SearchView: View {
         } else {
             List {
                 Section {
-                    ForEach(viewModel.recentKeywords, id: \.self) { keyword in
+                    ForEach(items, id: \.self) { keyword in
                         RecentKeywordRow(
                             keyword: keyword,
                             onTap: { Task { await viewModel.onTapRecent(keyword.keyword) } },
@@ -83,7 +93,40 @@ public struct SearchView: View {
         }
     }
 
+    @ViewBuilder
+    private func autoCompleteSection(items: [RecentKeyword]) -> some View {
+        if items.isEmpty {
+            ContentUnavailableView(
+                "일치하는 최근 검색이 없어요",
+                systemImage: "text.magnifyingglass"
+            )
+        } else {
+            List {
+                ForEach(items, id: \.self) { keyword in
+                    AutoCompleteRow(
+                        keyword: keyword,
+                        onTap: { Task { await viewModel.onTapRecent(keyword.keyword) } }
+                    )
+                }
+            }
+            .listStyle(.plain)
+        }
+    }
+
     // MARK: - Bindings
+
+    /// `.searchable`용 binding. set에서 onQueryChanged를 호출해 **사용자 입력에서만** 디바운스를 트리거한다.
+    /// 프로그램적으로 viewModel.query를 갱신(onSubmit, onTapRecent)할 때는 이 setter를 거치지 않으므로
+    /// .onChange 피드백 루프로 .recent 상태가 클로버되는 문제를 차단한다.
+    private var queryBinding: Binding<String> {
+        Binding(
+            get: { viewModel.query },
+            set: { newValue in
+                viewModel.query = newValue
+                viewModel.onQueryChanged(newValue)
+            }
+        )
+    }
 
     private var deleteTargetBinding: Binding<Bool> {
         Binding(
