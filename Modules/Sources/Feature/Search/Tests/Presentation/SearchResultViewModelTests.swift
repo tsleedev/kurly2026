@@ -54,6 +54,21 @@ final class SearchResultViewModelTests: XCTestCase {
         XCTAssertEqual(sut.state, .loading)
     }
 
+    func test_onAppear_cancelled_후_다시_호출하면_재시도된다() async {
+        // 첫 시도는 cancelled, 두 번째는 정상
+        let mock = MockSearchRepositoriesUseCase(stub: .failure(CancellationError()))
+        let sut = SearchResultViewModel(query: "swift", searchUseCase: mock)
+        await sut.onAppear()
+        XCTAssertEqual(sut.state, .loading)
+
+        await mock.setStub(.success(Self.sampleResult))
+        await sut.onAppear()
+
+        XCTAssertEqual(sut.state, .loaded(Self.sampleResult))
+        let captured = await mock.capturedExecutions
+        XCTAssertEqual(captured.count, 2)
+    }
+
     func test_onAppear_page는_항상_1로_호출된다() async {
         let mock = MockSearchRepositoriesUseCase(stub: .success(Self.sampleResult))
         let sut = SearchResultViewModel(query: "kotlin", searchUseCase: mock)
@@ -71,6 +86,19 @@ final class SearchResultViewModelTests: XCTestCase {
         let sut = SearchResultViewModel(query: "swift", searchUseCase: mock)
         await sut.onAppear()
 
+        await sut.onAppear()
+
+        let captured = await mock.capturedExecutions
+        XCTAssertEqual(captured.count, 1)
+    }
+
+    func test_onAppear_failed_상태면_자동_재호출되지_않는다() async {
+        let mock = MockSearchRepositoriesUseCase(stub: .failure(NetworkError.transport))
+        let sut = SearchResultViewModel(query: "swift", searchUseCase: mock)
+        await sut.onAppear()
+        XCTAssertEqual(sut.state, .failed(.transport))
+
+        // .task 재발화 등으로 onAppear가 다시 호출돼도 자동 재시도하지 않음 — 명시적 onRetry로만
         await sut.onAppear()
 
         let captured = await mock.capturedExecutions
