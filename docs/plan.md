@@ -59,6 +59,8 @@
 | `Tests` | 단위 테스트 | Source + 자신/타 모듈 Testing |
 | `Example` | 데모 앱 / Preview (선택적) | Source |
 
+> **본 프로젝트에서는 `Example` 미사용** — SwiftUI `#Preview` 가 `Source` 내 `PreviewSupport.swift` 와 함께 같은 역할을 하므로 별도 Example target 을 만들지 않았다. 실제 사용 sub-target 은 `Interface` / `Source` / `Testing` / `Tests` 4 종.
+
 ### 핵심 효과
 - 다른 모듈은 `XxxInterface`에만 의존 → `Source` 변경해도 재컴파일 안 됨 (빌드 시간 단축)
 - `Testing`을 분리해 Mock 재사용 + 의존성 사이클 자동 차단
@@ -819,6 +821,7 @@ jobs:
 | 19 | `refactor/search-result-inline-state` | 검색 결과를 push 화면이 아닌 SearchView 내부 `.results` state로 전환. AppRouter `.searchResult` case 제거. SearchResultDestination은 결과 VM factory 파라미터로 재사용. 문서 동기화 + 결과 스냅샷 re-record. | 16 |
 | 20 | `chore/cleanup-placeholder-files` | doc-comment/import-only placeholder Swift 파일 17개 삭제 + WebViewTesting 타겟 제거 (Mock 대상 없음). plan.md WebView 트리 동기화. | 19 |
 | 21 | `chore/rename-network-module` | `Network`/`NetworkInterface` 모듈을 `Networking`/`NetworkingInterface`로 rename. Apple iOS `Network` framework와 이름 충돌로 발생하던 xcodebuild 의존성 스캔 warning 해소. 폴더 + Package.swift + 14개 import + pbxproj productName + 문서 동기화. | 20 |
+| 22 | `chore/refresh-readme-screenshots` | README 스크린샷 4장을 snapshot reference (회색 placeholder) → iPhone 17 실 시뮬레이터 캡처로 교체 (avatar 로드, 실 데이터). 인터랙션 데모 GIF (검색→결과→WebView push, 15s, 2.8M) 추가. | 21 |
 
 > 의존성이 있는 PR은 의존 PR이 머지된 후 작업 시작. 병렬 가능한 PR(3, 4, 5)은 동시 진행 가능.
 

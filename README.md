@@ -6,13 +6,19 @@
 컬리 iOS 직무 1차 직무적합성 사전과제 — GitHub 저장소 검색 iOS 앱.
 **SwiftUI + Modular Clean Architecture + microfeatures 5-target**으로 구현했으며, 프로덕션 외부 라이브러리는 0개입니다.
 
+## 데모
+
+<img src="docs/images/demo.gif" width="280" alt="검색 → 결과 → WebView push 흐름" />
+
+> 자동완성, 검색 결과(avatar 로드), 셀 탭 → WebView push, 뒤로 돌아오면 최근 검색에 누적되는 흐름.
+
 ## 스크린샷
 
 | 최근 검색 | 자동완성 | 검색 결과 | 에러 + 재시도 |
 |---|---|---|---|
 | <img src="docs/images/01-recent.png" width="200" /> | <img src="docs/images/02-autocomplete.png" width="200" /> | <img src="docs/images/03-result.png" width="200" /> | <img src="docs/images/04-error.png" width="200" /> |
 
-> 스크린샷은 `swift-snapshot-testing`으로 자동 생성된 reference PNG. CI에서 회귀 검증.
+> iPhone 17 시뮬레이터 캡처 화면. UI 회귀는 별도로 `swift-snapshot-testing`으로 CI에서 검증.
 
 ## 핵심 기능
 
@@ -57,6 +63,7 @@ Core/Networking         Core/Storage        Core/ImageLoading
 | `Source` | 실제 구현 (View, ViewModel, Repository) |
 | `Testing` | Mock, Stub (다른 모듈 Tests에서 import) |
 | `Tests` | 단위/스냅샷 테스트 |
+| `Example` | 데모 앱 / Preview (선택적 — 본 프로젝트는 별도 SwiftPM target 대신 SwiftUI `#Preview` + `Source/PreviewSupport.swift`로 대체) |
 
 **효과**: 다른 모듈은 `XxxInterface`에만 의존 → `Source` 변경 시 재컴파일 차단. Mock은 `Testing` target에 격리되어 의존성 사이클 자동 차단.
 
