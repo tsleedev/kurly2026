@@ -63,6 +63,7 @@ Core/Networking         Core/Storage        Core/ImageLoading
 | `Source` | 실제 구현 (View, ViewModel, Repository) |
 | `Testing` | Mock, Stub (다른 모듈 Tests에서 import) |
 | `Tests` | 단위/스냅샷 테스트 |
+| `Example` | 데모 앱 / Preview (선택적 — 본 프로젝트는 별도 SwiftPM target 대신 SwiftUI `#Preview` + `Source/PreviewSupport.swift`로 대체) |
 
 **효과**: 다른 모듈은 `XxxInterface`에만 의존 → `Source` 변경 시 재컴파일 차단. Mock은 `Testing` target에 격리되어 의존성 사이클 자동 차단.
 
