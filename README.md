@@ -42,7 +42,7 @@ Feature/Search                           Feature/WebView
  └── Tests (Domain, Data, Presentation, Snapshot)
         │
         ▼
-Core/Network         Core/Storage        Core/ImageLoading
+Core/Networking         Core/Storage        Core/ImageLoading
  ├── Interface (Protocol, Entity)
  ├── Source (URLSession / UserDefaults / NSCache)
  ├── Testing (URLProtocolStub / InMemoryStorage / MockImageLoader)

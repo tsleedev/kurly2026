@@ -3,7 +3,7 @@ import XCTest
 import SnapshotTesting
 import SwiftUI
 import ImageLoadingTesting
-import NetworkInterface
+import NetworkingInterface
 import SearchInterface
 import SearchTesting
 @testable import Search

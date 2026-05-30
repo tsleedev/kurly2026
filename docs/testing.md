@@ -8,7 +8,7 @@
 | Data (Repository, Mapper) | `<Feature>Tests/Data/` | XCTest + URLProtocolStub | API 응답 매핑, 에러 매핑 |
 | Presentation (ViewModel) | `<Feature>Tests/Presentation/` | XCTest + Mock UseCase | 상태 전환, debounce, Router 호출 |
 | UI (Snapshot) | `<Feature>Tests/Snapshot/` | swift-snapshot-testing | 화면 렌더링 회귀 |
-| Network (통합) | `NetworkTests/` | XCTest + URLProtocolStub | URLSession 경로, 에러 매핑 |
+| Networking (통합) | `NetworkingTests/` | XCTest + URLProtocolStub | URLSession 경로, 에러 매핑 |
 
 ## 핵심 규칙
 
@@ -67,7 +67,7 @@ final class SearchViewSnapshotTests: XCTestCase {
 
 스냅샷 record 모드는 PR에서 명시적으로 합의 후만 사용. 평소엔 read-only.
 
-### Network 테스트 (URLProtocolStub)
+### Networking 테스트 (URLProtocolStub)
 
 ```swift
 final class GitHubRepositoryTests: XCTestCase {

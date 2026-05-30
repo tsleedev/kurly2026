@@ -1,5 +1,5 @@
 import Foundation
-import NetworkInterface
+import NetworkingInterface
 import SearchInterface
 
 /// `GitHubRepositoryProtocol`의 GitHub Search API 구현체.

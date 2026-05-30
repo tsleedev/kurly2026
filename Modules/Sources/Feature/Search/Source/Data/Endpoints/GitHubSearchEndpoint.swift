@@ -1,5 +1,5 @@
 import Foundation
-import NetworkInterface
+import NetworkingInterface
 
 /// GitHub Search API endpoint 정의.
 ///

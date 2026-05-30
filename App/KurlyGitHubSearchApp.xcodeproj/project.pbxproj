@@ -9,8 +9,8 @@
 /* Begin PBXBuildFile section */
 		4BE2F8612FC8016B003DE026 /* ImageLoading in Frameworks */ = {isa = PBXBuildFile; productRef = 4BE2F8602FC8016B003DE026 /* ImageLoading */; };
 		4BE2F8632FC8016B003DE026 /* ImageLoadingInterface in Frameworks */ = {isa = PBXBuildFile; productRef = 4BE2F8622FC8016B003DE026 /* ImageLoadingInterface */; };
-		4BE2F8652FC8016B003DE026 /* Network in Frameworks */ = {isa = PBXBuildFile; productRef = 4BE2F8642FC8016B003DE026 /* Network */; };
-		4BE2F8672FC8016B003DE026 /* NetworkInterface in Frameworks */ = {isa = PBXBuildFile; productRef = 4BE2F8662FC8016B003DE026 /* NetworkInterface */; };
+		4BE2F8652FC8016B003DE026 /* Networking in Frameworks */ = {isa = PBXBuildFile; productRef = 4BE2F8642FC8016B003DE026 /* Networking */; };
+		4BE2F8672FC8016B003DE026 /* NetworkingInterface in Frameworks */ = {isa = PBXBuildFile; productRef = 4BE2F8662FC8016B003DE026 /* NetworkingInterface */; };
 		4BE2F8692FC8016B003DE026 /* Search in Frameworks */ = {isa = PBXBuildFile; productRef = 4BE2F8682FC8016B003DE026 /* Search */; };
 		4BE2F86B2FC8016B003DE026 /* SearchInterface in Frameworks */ = {isa = PBXBuildFile; productRef = 4BE2F86A2FC8016B003DE026 /* SearchInterface */; };
 		4BE2F86D2FC8016B003DE026 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = 4BE2F86C2FC8016B003DE026 /* Storage */; };
@@ -37,7 +37,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4BE2F8692FC8016B003DE026 /* Search in Frameworks */,
-				4BE2F8652FC8016B003DE026 /* Network in Frameworks */,
+				4BE2F8652FC8016B003DE026 /* Networking in Frameworks */,
 				4BE2F86D2FC8016B003DE026 /* Storage in Frameworks */,
 				4BE2F8712FC8016B003DE026 /* WebView in Frameworks */,
 				4BE2F86B2FC8016B003DE026 /* SearchInterface in Frameworks */,
@@ -45,7 +45,7 @@
 				4BE2F8632FC8016B003DE026 /* ImageLoadingInterface in Frameworks */,
 				4BE2F86F2FC8016B003DE026 /* StorageInterface in Frameworks */,
 				4BE2F8732FC8016B003DE026 /* WebViewInterface in Frameworks */,
-				4BE2F8672FC8016B003DE026 /* NetworkInterface in Frameworks */,
+				4BE2F8672FC8016B003DE026 /* NetworkingInterface in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -90,8 +90,8 @@
 			packageProductDependencies = (
 				4BE2F8602FC8016B003DE026 /* ImageLoading */,
 				4BE2F8622FC8016B003DE026 /* ImageLoadingInterface */,
-				4BE2F8642FC8016B003DE026 /* Network */,
-				4BE2F8662FC8016B003DE026 /* NetworkInterface */,
+				4BE2F8642FC8016B003DE026 /* Networking */,
+				4BE2F8662FC8016B003DE026 /* NetworkingInterface */,
 				4BE2F8682FC8016B003DE026 /* Search */,
 				4BE2F86A2FC8016B003DE026 /* SearchInterface */,
 				4BE2F86C2FC8016B003DE026 /* Storage */,
@@ -381,13 +381,13 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = ImageLoadingInterface;
 		};
-		4BE2F8642FC8016B003DE026 /* Network */ = {
+		4BE2F8642FC8016B003DE026 /* Networking */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = Network;
+			productName = Networking;
 		};
-		4BE2F8662FC8016B003DE026 /* NetworkInterface */ = {
+		4BE2F8662FC8016B003DE026 /* NetworkingInterface */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = NetworkInterface;
+			productName = NetworkingInterface;
 		};
 		4BE2F8682FC8016B003DE026 /* Search */ = {
 			isa = XCSwiftPackageProductDependency;

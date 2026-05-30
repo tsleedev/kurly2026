@@ -82,18 +82,18 @@ KurlyGitHubSearch/                       ← Git Repo Root
 │   └── Sources/
 │       │
 │       ├── Core/                        ← 공용 인프라 모듈 그룹
-│       │   ├── Network/
-│       │   │   ├── Interface/           ← target: NetworkInterface
+│       │   ├── Networking/
+│       │   │   ├── Interface/           ← target: NetworkingInterface
 │       │   │   │   ├── APIClientProtocol.swift
 │       │   │   │   ├── Endpoint.swift
 │       │   │   │   ├── HTTPMethod.swift
 │       │   │   │   └── NetworkError.swift
-│       │   │   ├── Source/              ← target: Network
+│       │   │   ├── Source/              ← target: Networking
 │       │   │   │   └── URLSessionAPIClient.swift
-│       │   │   ├── Testing/             ← target: NetworkTesting
+│       │   │   ├── Testing/             ← target: NetworkingTesting
 │       │   │   │   ├── MockAPIClient.swift
 │       │   │   │   └── URLProtocolStub.swift
-│       │   │   └── Tests/               ← target: NetworkTests
+│       │   │   └── Tests/               ← target: NetworkingTests
 │       │   │
 │       │   ├── Storage/
 │       │   │   ├── Interface/           ← target: StorageInterface
@@ -187,12 +187,12 @@ App
  ├── AppRouter (모든 Destination 통합)
  ├── SearchInterface, Search
  ├── WebViewInterface, WebView
- ├── NetworkInterface, Network
+ ├── NetworkingInterface, Networking
  ├── StorageInterface, Storage
  └── ImageLoadingInterface, ImageLoading
 
 Search   ──► SearchInterface
-         ──► NetworkInterface, StorageInterface, ImageLoadingInterface
+         ──► NetworkingInterface, StorageInterface, ImageLoadingInterface
          ──► (WebView는 직접 의존 X — App이 Router로 연결)
 
 Domain Layer 원칙:
@@ -211,7 +211,7 @@ let package = Package(
         .library(name: "SearchInterface", targets: ["SearchInterface"]),
         .library(name: "Search", targets: ["Search"]),
         .library(name: "SearchTesting", targets: ["SearchTesting"]),
-        // WebView, Network, Storage, ImageLoading 동일 패턴
+        // WebView, Networking, Storage, ImageLoading 동일 패턴
     ],
     dependencies: [
         .package(url: "https://github.com/pointfreeco/swift-snapshot-testing",
@@ -222,7 +222,7 @@ let package = Package(
         .target(name: "SearchInterface", path: "Sources/Feature/Search/Interface"),
         .target(name: "Search",
                 dependencies: ["SearchInterface",
-                               "NetworkInterface", "StorageInterface",
+                               "NetworkingInterface", "StorageInterface",
                                "ImageLoadingInterface"],
                 path: "Sources/Feature/Search/Source"),
         .target(name: "SearchTesting",
@@ -231,12 +231,12 @@ let package = Package(
         .testTarget(name: "SearchTests",
                     dependencies: [
                         "Search", "SearchTesting",
-                        "NetworkTesting", "StorageTesting", "ImageLoadingTesting",
+                        "NetworkingTesting", "StorageTesting", "ImageLoadingTesting",
                         .product(name: "SnapshotTesting",
                                  package: "swift-snapshot-testing")
                     ],
                     path: "Sources/Feature/Search/Tests"),
-        // === Feature/WebView, Core/Network, Core/Storage, Core/ImageLoading (동일 패턴) ===
+        // === Feature/WebView, Core/Networking, Core/Storage, Core/ImageLoading (동일 패턴) ===
     ]
 )
 ```
@@ -498,10 +498,10 @@ struct SearchView: View {
 }
 ```
 
-### Core/Network
+### Core/Networking
 
 ```swift
-// NetworkInterface
+// NetworkingInterface
 public protocol APIClientProtocol: Sendable {
     func request<T: Decodable>(_ endpoint: Endpoint) async throws -> T
 }
@@ -511,7 +511,7 @@ public enum NetworkError: Error, Equatable {
          decoding, rateLimited(retryAfter: TimeInterval?)
 }
 
-// Network (Source)
+// Networking (Source)
 public final class URLSessionAPIClient: APIClientProtocol { ... }
 ```
 
@@ -704,7 +704,7 @@ Response 매핑:
 - `SearchResultViewSnapshotTests`: 로딩 / 결과 N개 / 빈 결과 / 에러
 - SwiftUI View → `assertSnapshot(of: view.frame(width:height:), as: .image)`
 
-### Network 테스트 (NetworkTests/)
+### Networking 테스트 (NetworkingTests/)
 - URLProtocolStub 기반 통합 테스트
 - 정상/타임아웃/4xx/5xx/디코딩 실패 매트릭스
 
@@ -799,7 +799,7 @@ jobs:
 |---|---|---|---|
 | 1 | `infra/skeleton` | Xcode 프로젝트, Package.swift 골격, .gitignore, README 뼈대, CLAUDE.md + docs/, SwiftLint 룰 | - |
 | 2 | `infra/ci` | GitHub Actions: test.yml, lint.yml (Gemini 리뷰 워크플로는 별도 관리됨) | 1 |
-| 3 | `feat/core-network` | NetworkInterface + URLSessionAPIClient + URLProtocolStub + Tests | 1 |
+| 3 | `feat/core-network` | NetworkingInterface + URLSessionAPIClient + URLProtocolStub + Tests | 1 |
 | 4 | `feat/core-storage` | StorageInterface + UserDefaultsStorage + InMemoryStorage + Tests | 1 |
 | 5 | `feat/core-image-loading` | ImageLoader (actor + NSCache) + CachedAsyncImage + Tests | 1 |
 | 6 | `feat/search-domain` | SearchInterface (Entity, UseCase protocol) + UseCase Impl + Mock + Tests | 1 |
@@ -818,6 +818,7 @@ jobs:
 | 18 | `chore/readme-final` | README 최종 정리: 아키텍처 다이어그램, CI 배지, AI 활용 내역, 스크린샷. (각 PR이 자기 변경분은 README에 점진 반영하되, 이 PR에서 전체 톤/구조를 마무리) | 17 |
 | 19 | `refactor/search-result-inline-state` | 검색 결과를 push 화면이 아닌 SearchView 내부 `.results` state로 전환. AppRouter `.searchResult` case 제거. SearchResultDestination은 결과 VM factory 파라미터로 재사용. 문서 동기화 + 결과 스냅샷 re-record. | 16 |
 | 20 | `chore/cleanup-placeholder-files` | doc-comment/import-only placeholder Swift 파일 17개 삭제 + WebViewTesting 타겟 제거 (Mock 대상 없음). plan.md WebView 트리 동기화. | 19 |
+| 21 | `chore/rename-network-module` | `Network`/`NetworkInterface` 모듈을 `Networking`/`NetworkingInterface`로 rename. Apple iOS `Network` framework와 이름 충돌로 발생하던 xcodebuild 의존성 스캔 warning 해소. 폴더 + Package.swift + 14개 import + pbxproj productName + 문서 동기화. | 20 |
 
 > 의존성이 있는 PR은 의존 PR이 머지된 후 작업 시작. 병렬 가능한 PR(3, 4, 5)은 동시 진행 가능.
 

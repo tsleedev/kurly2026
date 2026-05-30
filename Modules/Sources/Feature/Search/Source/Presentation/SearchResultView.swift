@@ -2,7 +2,7 @@
 import SwiftUI
 import UIKit
 import ImageLoadingInterface
-import NetworkInterface
+import NetworkingInterface
 import SearchInterface
 
 /// 검색 결과 화면. 무한 스크롤로 페이지 누적.

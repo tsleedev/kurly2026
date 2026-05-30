@@ -1,5 +1,5 @@
 import Foundation
-import NetworkInterface
+import NetworkingInterface
 
 /// URLSession 기반 APIClientProtocol 구현체
 ///

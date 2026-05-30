@@ -1,5 +1,5 @@
 import XCTest
-import NetworkInterface
+import NetworkingInterface
 import NetworkTesting
 import SearchInterface
 @testable import Search

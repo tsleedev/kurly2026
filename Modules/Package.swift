@@ -14,8 +14,8 @@ let package = Package(
         .library(name: "WebViewInterface", targets: ["WebViewInterface"]),
         .library(name: "WebView", targets: ["WebView"]),
 
-        .library(name: "NetworkInterface", targets: ["NetworkInterface"]),
-        .library(name: "Network", targets: ["Network"]),
+        .library(name: "NetworkingInterface", targets: ["NetworkingInterface"]),
+        .library(name: "Networking", targets: ["Networking"]),
 
         .library(name: "StorageInterface", targets: ["StorageInterface"]),
         .library(name: "Storage", targets: ["Storage"]),
@@ -33,7 +33,7 @@ let package = Package(
             name: "Search",
             dependencies: [
                 "SearchInterface",
-                "NetworkInterface",
+                "NetworkingInterface",
                 "StorageInterface",
                 "ImageLoadingInterface",
                 // CachedAsyncImage(공용 SwiftUI 컴포넌트) 사용. Source-to-Source 의존은
@@ -59,7 +59,7 @@ let package = Package(
             dependencies: [
                 "Search",
                 "SearchTesting",
-                "NetworkTesting",
+                "NetworkingTesting",
                 "StorageTesting",
                 "ImageLoadingTesting",
                 .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
@@ -84,22 +84,22 @@ let package = Package(
             path: "Sources/Feature/WebView/Tests"
         ),
 
-        // MARK: Core/Network
-        .target(name: "NetworkInterface", path: "Sources/Core/Network/Interface"),
+        // MARK: Core/Networking
+        .target(name: "NetworkingInterface", path: "Sources/Core/Networking/Interface"),
         .target(
-            name: "Network",
-            dependencies: ["NetworkInterface"],
-            path: "Sources/Core/Network/Source"
+            name: "Networking",
+            dependencies: ["NetworkingInterface"],
+            path: "Sources/Core/Networking/Source"
         ),
         .target(
-            name: "NetworkTesting",
-            dependencies: ["NetworkInterface"],
-            path: "Sources/Core/Network/Testing"
+            name: "NetworkingTesting",
+            dependencies: ["NetworkingInterface"],
+            path: "Sources/Core/Networking/Testing"
         ),
         .testTarget(
-            name: "NetworkTests",
-            dependencies: ["Network", "NetworkTesting"],
-            path: "Sources/Core/Network/Tests"
+            name: "NetworkingTests",
+            dependencies: ["Networking", "NetworkingTesting"],
+            path: "Sources/Core/Networking/Tests"
         ),
 
         // MARK: Core/Storage

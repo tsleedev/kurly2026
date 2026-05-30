@@ -9,7 +9,7 @@ kurly2026/
 ├── Modules/                            ← SwiftPM Package
 │   └── Sources/
 │       ├── Core/                       ← 공용 인프라 모듈 그룹
-│       │   ├── Network/{Interface,Source,Testing,Tests}/
+│       │   ├── Networking/{Interface,Source,Testing,Tests}/
 │       │   ├── Storage/{Interface,Source,Testing,Tests}/
 │       │   └── ImageLoading/{Interface,Source,Testing,Tests}/
 │       └── Feature/                    ← 비즈니스 화면 모듈 그룹
@@ -42,12 +42,12 @@ App
  ├── AppRouter (Destination = WebViewDestination)
  ├── SearchInterface,        Search
  ├── WebViewInterface,       WebView
- ├── NetworkInterface,       Network
+ ├── NetworkingInterface,       Networking
  ├── StorageInterface,       Storage
  └── ImageLoadingInterface,  ImageLoading
 
 Search   ──► SearchInterface
-         ──► NetworkInterface, StorageInterface, ImageLoadingInterface
+         ──► NetworkingInterface, StorageInterface, ImageLoadingInterface
          ──► (WebView 직접 의존 X — App이 Router로 연결)
 
 WebView  ──► WebViewInterface
@@ -75,7 +75,7 @@ WebView  ──► WebViewInterface
 
 - **도메인 및 플랫폼 독립 Interface** (Foundation only)
   - 비즈니스 도메인: `SearchInterface`, `WebViewInterface`
-  - 공용 인프라(플랫폼 독립): `NetworkInterface`, `StorageInterface`
+  - 공용 인프라(플랫폼 독립): `NetworkingInterface`, `StorageInterface`
   - UIKit/SwiftUI/외부 라이브러리 import 금지
 - **OS-bound 인프라 Interface** — 본질적으로 OS API 추상화인 경우
   - 예: `ImageLoadingInterface` (UIImage 노출)
@@ -85,7 +85,7 @@ WebView  ──► WebViewInterface
 
 ## Interface 추상화 규칙
 
-외부 IO(Network, Storage, Image, Repository)를 추상화하는 모든 protocol은 **async 메서드**로 정의한다.
+외부 IO(Networking, Storage, Image, Repository)를 추상화하는 모든 protocol은 **async 메서드**로 정의한다.
 
 ### 이유
 
