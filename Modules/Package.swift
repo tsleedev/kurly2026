@@ -78,6 +78,7 @@ let package = Package(
             name: "WebViewTests",
             dependencies: [
                 "WebView",
+                "WebViewInterface",
                 .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
             ],
             path: "Sources/Feature/WebView/Tests"
