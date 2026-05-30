@@ -59,6 +59,8 @@
 | `Tests` | 단위 테스트 | Source + 자신/타 모듈 Testing |
 | `Example` | 데모 앱 / Preview (선택적) | Source |
 
+> **본 프로젝트에서는 `Example` 미사용** — SwiftUI `#Preview` 가 `Source` 내 `PreviewSupport.swift` 와 함께 같은 역할을 하므로 별도 Example target 을 만들지 않았다. 실제 사용 sub-target 은 `Interface` / `Source` / `Testing` / `Tests` 4 종.
+
 ### 핵심 효과
 - 다른 모듈은 `XxxInterface`에만 의존 → `Source` 변경해도 재컴파일 안 됨 (빌드 시간 단축)
 - `Testing`을 분리해 Mock 재사용 + 의존성 사이클 자동 차단

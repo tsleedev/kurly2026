@@ -18,7 +18,7 @@
 |---|---|---|---|
 | <img src="docs/images/01-recent.png" width="200" /> | <img src="docs/images/02-autocomplete.png" width="200" /> | <img src="docs/images/03-result.png" width="200" /> | <img src="docs/images/04-error.png" width="200" /> |
 
-> iPhone 17 시뮬레이터 실촬. UI 회귀는 별도로 `swift-snapshot-testing`으로 CI에서 검증.
+> iPhone 17 시뮬레이터 캡처 화면. UI 회귀는 별도로 `swift-snapshot-testing`으로 CI에서 검증.
 
 ## 핵심 기능
 
