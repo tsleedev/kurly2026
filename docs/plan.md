@@ -164,13 +164,12 @@ KurlyGitHubSearch/                       ← Git Repo Root
 │           │   │
 │           │   └── (Example 생략 — SwiftUI #Preview로 대체)
 │           │
-│           └── WebView/                 ← Feature 모듈 (microfeatures)
+│           └── WebView/                 ← Feature 모듈 (Testing target 생략 — Mock 대상 없음)
 │               ├── Interface/           ← target: WebViewInterface
 │               │   └── WebViewDestination.swift   (struct: url, title — AppRouter가 사용)
 │               ├── Source/              ← target: WebView
 │               │   ├── RepositoryWebView.swift          (SwiftUI View, init(destination:))
 │               │   └── WKWebViewRepresentable.swift     (UIViewRepresentable)
-│               ├── Testing/             ← target: WebViewTesting (필요 시)
 │               └── Tests/               ← target: WebViewTests
 │
 ├── .github/
@@ -818,6 +817,7 @@ jobs:
 | 17 | `chore/snapshot-tests` | SearchView / SearchResultView Snapshot 테스트 (record → commit) | 16 |
 | 18 | `chore/readme-final` | README 최종 정리: 아키텍처 다이어그램, CI 배지, AI 활용 내역, 스크린샷. (각 PR이 자기 변경분은 README에 점진 반영하되, 이 PR에서 전체 톤/구조를 마무리) | 17 |
 | 19 | `refactor/search-result-inline-state` | 검색 결과를 push 화면이 아닌 SearchView 내부 `.results` state로 전환. AppRouter `.searchResult` case 제거. SearchResultDestination은 결과 VM factory 파라미터로 재사용. 문서 동기화 + 결과 스냅샷 re-record. | 16 |
+| 20 | `chore/cleanup-placeholder-files` | doc-comment/import-only placeholder Swift 파일 17개 삭제 + WebViewTesting 타겟 제거 (Mock 대상 없음). plan.md WebView 트리 동기화. | 19 |
 
 > 의존성이 있는 PR은 의존 PR이 머지된 후 작업 시작. 병렬 가능한 PR(3, 4, 5)은 동시 진행 가능.
 

@@ -1,1 +1,0 @@
-// ImageLoadingTesting — see MockImageLoader.swift
