@@ -1,5 +1,5 @@
 import XCTest
-import NetworkInterface
+import NetworkingInterface
 
 final class EndpointTests: XCTestCase {
 

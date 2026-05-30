@@ -1,6 +1,6 @@
 import Foundation
 import Observation
-import NetworkInterface
+import NetworkingInterface
 import SearchInterface
 
 /// 검색 결과 화면 ViewModel.

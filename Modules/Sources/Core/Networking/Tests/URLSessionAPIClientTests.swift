@@ -1,7 +1,7 @@
 import XCTest
-import NetworkInterface
-import NetworkTesting
-@testable import Network
+import NetworkingInterface
+import NetworkingTesting
+@testable import Networking
 
 final class URLSessionAPIClientTests: XCTestCase {
 

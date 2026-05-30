@@ -1,5 +1,5 @@
 import Foundation
-import NetworkInterface
+import NetworkingInterface
 
 /// 테스트용 APIClientProtocol Mock 구현체
 ///

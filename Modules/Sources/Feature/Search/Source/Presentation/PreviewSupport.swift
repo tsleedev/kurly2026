@@ -1,7 +1,7 @@
 #if DEBUG && canImport(UIKit) && canImport(SwiftUI)
 import Foundation
 import UIKit
-import NetworkInterface
+import NetworkingInterface
 import ImageLoadingInterface
 import SearchInterface
 

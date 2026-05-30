@@ -1,8 +1,8 @@
 import Foundation
 import ImageLoading
 import ImageLoadingInterface
-import Network
-import NetworkInterface
+import Networking
+import NetworkingInterface
 import Search
 import SearchInterface
 import Storage
