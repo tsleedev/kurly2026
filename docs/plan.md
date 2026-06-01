@@ -35,7 +35,7 @@
 | 외부 라이브러리 (테스트) | **swift-snapshot-testing** | Pointfree, SwiftUI View Snapshot도 지원 |
 | 최소 지원 버전 | **iOS 17.0+** | 컬리 앱 기준 |
 | 의존성 주입 | **생성자 주입 + AppDIContainer 수동 조립** | App 모듈의 Composition Root |
-| 최근 검색어 저장 | **UserDefaults + Codable** | `[(keyword, date)]` 직렬화 |
+| 최근 검색어 저장 | **UserDefaults + Codable, 최신 10개 cap** | `[(keyword, date)]` 직렬화. 요구사항 1-2(최대 10개)를 `RecentKeywordRepository`의 `append`(+1 증가 지점) + `loadFromStorage`(읽기 시점) 양쪽에서 `prefix(10)`으로 강제 → 디스크 상태와 무관하게 불변식 보장. 저장·표시·자동완성이 동일 소스 |
 | 테스트 | **Domain + Data + ViewModel + UI(Snapshot)** | XCTest + swift-snapshot-testing |
 | CI/CD | **GitHub Actions: Test + SwiftLint** | 우대사항 충족 |
 
@@ -822,6 +822,7 @@ jobs:
 | 20 | `chore/cleanup-placeholder-files` | doc-comment/import-only placeholder Swift 파일 17개 삭제 + WebViewTesting 타겟 제거 (Mock 대상 없음). plan.md WebView 트리 동기화. | 19 |
 | 21 | `chore/rename-network-module` | `Network`/`NetworkInterface` 모듈을 `Networking`/`NetworkingInterface`로 rename. Apple iOS `Network` framework와 이름 충돌로 발생하던 xcodebuild 의존성 스캔 warning 해소. 폴더 + Package.swift + 14개 import + pbxproj productName + 문서 동기화. | 20 |
 | 22 | `chore/refresh-readme-screenshots` | README 스크린샷 4장을 snapshot reference (회색 placeholder) → iPhone 17 실 시뮬레이터 캡처로 교체 (avatar 로드, 실 데이터). 인터랙션 데모 GIF (검색→결과→WebView push, 15s, 2.8M) 추가. | 21 |
+| 23 | `fix/recent-keyword-max-10` | 최근 검색어를 최신 10개로 cap (요구사항 1-2 누락분). `RecentKeywordRepository`의 `append`(증가 지점) + `loadFromStorage`(읽기 지점)에 `prefix(10)` + 테스트 2건. | 10 |
 
 > 의존성이 있는 PR은 의존 PR이 머지된 후 작업 시작. 병렬 가능한 PR(3, 4, 5)은 동시 진행 가능.
 

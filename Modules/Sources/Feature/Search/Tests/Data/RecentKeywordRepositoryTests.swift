@@ -57,6 +57,20 @@ final class RecentKeywordRepositoryTests: XCTestCase {
         XCTAssertEqual(result.first?.searchedAt, t3)
     }
 
+    func test_append_11개_이상이면_최신_10개만_유지된다() async {
+        let sut = RecentKeywordRepository(storage: InMemoryStorage())
+
+        for index in 1...11 {
+            await sut.append("kw\(index)", at: Date(timeIntervalSince1970: TimeInterval(index * 1_000)))
+        }
+        let result = await sut.all()
+
+        XCTAssertEqual(result.count, 10)
+        // 가장 오래된 "kw1"이 밀려나고, 최신 "kw11"이 맨 앞
+        XCTAssertEqual(result.first?.keyword, "kw11")
+        XCTAssertFalse(result.contains { $0.keyword == "kw1" })
+    }
+
     // MARK: - remove
 
     func test_remove_지정한_키워드만_제거된다() async {
@@ -104,6 +118,23 @@ final class RecentKeywordRepositoryTests: XCTestCase {
         let result = await second.all()
 
         XCTAssertEqual(result.map(\.keyword), ["swift"])
+    }
+
+    func test_저장값이_10개_초과여도_읽을때_최신_10개로_제한된다() async {
+        let storage = InMemoryStorage()
+        // 내림차순(최신이 앞)으로 11개를 디스크에 직접 주입 — 구버전 데이터가 남아있는 상황을 모사.
+        let stored = (1...11).reversed().map { index in
+            RecentKeyword(keyword: "kw\(index)", searchedAt: Date(timeIntervalSince1970: TimeInterval(index * 1_000)))
+        }
+        let data = try? JSONEncoder().encode(stored)
+        await storage.setData(data, forKey: "feature.search.recentKeywords.v1")
+        let sut = RecentKeywordRepository(storage: storage)
+
+        let result = await sut.all()
+
+        XCTAssertEqual(result.count, 10)
+        XCTAssertEqual(result.first?.keyword, "kw11")
+        XCTAssertFalse(result.contains { $0.keyword == "kw1" })
     }
 
     func test_손상된_저장값은_빈_배열로_복구된다() async {
