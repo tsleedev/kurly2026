@@ -1,7 +1,7 @@
 # Kurly GitHub Search
 
-[![Test](https://github.com/CodeChallengesHub/kurly2026/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/CodeChallengesHub/kurly2026/actions/workflows/test.yml)
-[![Lint](https://github.com/CodeChallengesHub/kurly2026/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/CodeChallengesHub/kurly2026/actions/workflows/lint.yml)
+[![Test](https://github.com/tsleedev/kurly2026/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/tsleedev/kurly2026/actions/workflows/test.yml)
+[![Lint](https://github.com/tsleedev/kurly2026/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/tsleedev/kurly2026/actions/workflows/lint.yml)
 
 컬리 iOS 직무 1차 직무적합성 사전과제 — GitHub 저장소 검색 iOS 앱.
 **SwiftUI + Modular Clean Architecture + microfeatures 5-target**으로 구현했으며, 프로덕션 외부 라이브러리는 0개입니다.
