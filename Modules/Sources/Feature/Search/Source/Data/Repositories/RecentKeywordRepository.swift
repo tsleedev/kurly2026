@@ -17,6 +17,10 @@ public actor RecentKeywordRepository: RecentKeywordRepositoryProtocol {
 
     private static let storageKey = "feature.search.recentKeywords.v1"
 
+    /// 요구사항 1-2: 최근 검색어는 최대 10개까지만 보관·표시한다.
+    /// append가 맨 앞 삽입 + 내림차순 유지이므로 prefix(maxCount)가 곧 "가장 오래된 것부터 제거".
+    private static let maxCount = 10
+
     // MARK: - State
 
     private let storage: KeyValueStorageProtocol
@@ -46,6 +50,7 @@ public actor RecentKeywordRepository: RecentKeywordRepositoryProtocol {
         var items = await ensureLoaded()
         items.removeAll { $0.keyword == keyword }
         items.insert(RecentKeyword(keyword: keyword, searchedAt: date), at: 0)
+        items = Array(items.prefix(Self.maxCount))
         cache = items
         await persist(items)
     }
@@ -78,7 +83,12 @@ public actor RecentKeywordRepository: RecentKeywordRepositoryProtocol {
               let decoded = try? decoder.decode([RecentKeyword].self, from: data) else {
             return []
         }
-        return decoded
+        // 디스크에 어떤 경로로 10개 초과가 들어있든(구버전 데이터 등) 읽는 시점에 불변식 강제.
+        // 초과 시 디스크도 한 번 동기화(write-back)해 이후 cold start의 반복 디코딩을 막는다.
+        guard decoded.count > Self.maxCount else { return decoded }
+        let capped = Array(decoded.prefix(Self.maxCount))
+        await persist(capped)
+        return capped
     }
 
     /// 인코딩 실패 시 storage를 건드리지 않는다. `setData(nil, ...)`는 키를 삭제하는 계약이므로
