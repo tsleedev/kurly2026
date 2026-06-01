@@ -84,7 +84,11 @@ public actor RecentKeywordRepository: RecentKeywordRepositoryProtocol {
             return []
         }
         // 디스크에 어떤 경로로 10개 초과가 들어있든(구버전 데이터 등) 읽는 시점에 불변식 강제.
-        return Array(decoded.prefix(Self.maxCount))
+        // 초과 시 디스크도 한 번 동기화(write-back)해 이후 cold start의 반복 디코딩을 막는다.
+        guard decoded.count > Self.maxCount else { return decoded }
+        let capped = Array(decoded.prefix(Self.maxCount))
+        await persist(capped)
+        return capped
     }
 
     /// 인코딩 실패 시 storage를 건드리지 않는다. `setData(nil, ...)`는 키를 삭제하는 계약이므로

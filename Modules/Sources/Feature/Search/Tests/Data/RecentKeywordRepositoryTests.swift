@@ -137,6 +137,22 @@ final class RecentKeywordRepositoryTests: XCTestCase {
         XCTAssertFalse(result.contains { $0.keyword == "kw1" })
     }
 
+    func test_저장값이_10개_초과면_읽는_시점에_디스크도_10개로_동기화된다() async {
+        let storage = InMemoryStorage()
+        let stored = (1...11).reversed().map { index in
+            RecentKeyword(keyword: "kw\(index)", searchedAt: Date(timeIntervalSince1970: TimeInterval(index * 1_000)))
+        }
+        let data = try? JSONEncoder().encode(stored)
+        await storage.setData(data, forKey: "feature.search.recentKeywords.v1")
+
+        // 읽기만 했을 뿐인데 초과분이 디스크에서 잘려나가야 한다(write-back).
+        _ = await RecentKeywordRepository(storage: storage).all()
+
+        let raw = await storage.data(forKey: "feature.search.recentKeywords.v1")
+        let persisted = raw.flatMap { try? JSONDecoder().decode([RecentKeyword].self, from: $0) }
+        XCTAssertEqual(persisted?.count, 10)
+    }
+
     func test_손상된_저장값은_빈_배열로_복구된다() async {
         let storage = InMemoryStorage()
         await storage.setData(Data("not json".utf8), forKey: "feature.search.recentKeywords.v1")
